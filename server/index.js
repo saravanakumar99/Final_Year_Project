@@ -256,6 +256,11 @@ const corsOptions = {
 app.use(cors(corsOptions)); // Apply CORS before defining routes
 app.options("*", cors(corsOptions));
 
+// Initialize Socket.IO with CORS options
+const io = new Server(server, {
+  cors: corsOptions
+});
+
 
 // Map to store room data
 const roomsMap = new Map();
