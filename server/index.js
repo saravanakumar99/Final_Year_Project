@@ -342,28 +342,15 @@ function broadcastUserList(roomId) {
 
   // Handle chat message joining
   socket.on("JOIN_CHAT", ({ roomId, username }) => {
-    console.log(`📢 ${username} joined room ${roomId}`);
+    if (!username) return;
     socket.join(roomId);
+    userSocketMap.set(socket.id, username);
 
-    // Send existing chat history immediately
-    if (chatHistories.has(roomId)) {
-        socket.emit("CHAT_HISTORY", chatHistories.get(roomId));
-    } else {
-        chatHistories.set(roomId, []);
+    if (!chatHistories.has(roomId)) {
+      chatHistories.set(roomId, []);
     }
-
-    // Notify others in the room
-    io.to(roomId).emit("USER_JOINED", { username, roomId });
-
-    // Send welcome message
-    const systemMessage = {
-        username: "System",
-        message: `${username} joined the room.`,
-        timestamp: new Date().toLocaleTimeString()
-    };
-    chatHistories.get(roomId).push(systemMessage);
-    io.to(roomId).emit("RECEIVE_MESSAGE", systemMessage);
-});
+    socket.emit("CHAT_HISTORY", chatHistories.get(roomId));
+  });
 
   socket.on(ACTIONS.LEAVE_ROOM, ({ roomId, username }) => {
     if (!roomId || !username) return;
@@ -473,17 +460,11 @@ function broadcastUserList(roomId) {
     const chatMessage = { username, message, timestamp };
 
     // Ensure chatHistories exists for the room
-    if (!chatHistories.has(roomId)) {
-        chatHistories.set(roomId, []);
-    }
-
     chatHistories.get(roomId).push(chatMessage);
+    io.to(roomId).emit("RECEIVE_MESSAGE", chatMessage);
 
     console.log(`📨 Message received from ${username}:`, message);
-    
-    // Broadcast message to all users in the room
-    io.to(roomId).emit("RECEIVE_MESSAGE", chatMessage);
-});
+    });
 
 
   // Ensure consistent message handling between ACTIONS.SEND_MESSAGE and SEND_MESSAGE

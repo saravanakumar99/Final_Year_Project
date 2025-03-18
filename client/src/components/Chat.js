@@ -42,6 +42,7 @@ const ChatBox = ({ roomId, username }) => {
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState("");
   const socketRef = useRef(null);
+  const chatContainerRef = useRef(null);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -77,14 +78,25 @@ const ChatBox = ({ roomId, username }) => {
       // Receive New Messages
       socketRef.current.on("RECEIVE_MESSAGE", (data) => {
         console.log("📩 New message received:", data);
-        setMessages(prev => [...prev, {
-          username: data.username,
-          message: data.message,
-          timestamp: data.timestamp,
-          isSystemMessage: data.username === "System"
-        }]);
+        
+        // Explicitly check and set isSystemMessage flag
+        const isSystem = data.username === "System";
+        console.log(`Is this a system message? ${isSystem ? "Yes" : "No"}`);
+        
+        setMessages((prev) => {
+          const newMessage = {
+            username: data.username,
+            message: data.message,
+            timestamp: data.timestamp,
+            isSystemMessage: isSystem
+          };
+          
+          const newMessages = [...prev, newMessage];
+          console.log("📜 Updated messages array:", newMessages);
+          return newMessages;
+        });
       });
-
+      
       socketRef.current.on("connect_error", (error) => {
         console.error("❌ Connection error:", error);
       });
@@ -113,6 +125,7 @@ const ChatBox = ({ roomId, username }) => {
         username,
         message: messageInput.trim(),
         timestamp: new Date().toLocaleTimeString(),
+        className: "message-item",
       };
       console.log("📤 Sending message:", messageData);
       socketRef.current.emit("SEND_MESSAGE", messageData);
@@ -121,29 +134,36 @@ const ChatBox = ({ roomId, username }) => {
   };
 
   return (
-    <div className="chatbox-container">
+    <div className="chatbox-container" ref={chatContainerRef}>
       <div className="messages-container">
-        {messages.map((msg, index) => (
-          <div key={index} className={`message-item ${msg.isSystemMessage ? "system-message-wrapper" : (msg.username === username ? "sent" : "received")}`}>
-            {msg.isSystemMessage ? (
-              <div className="system-message">
-                <span className="system-text">{msg.message}</span>
-                <span className="timestamp">{msg.timestamp}</span>
-              </div>
-            ) : (
-              <>
-                <div className="message-header">
-                  <div className="user-info">
-                    <LetterAvatar username={msg.username} />
-                    <span className="username">{msg.username}</span>
-                  </div>
+        {messages.map((msg, index) => {
+          console.log(`Rendering message ${index}:`, msg);
+          return (
+            <div key={index} 
+                className={`message-item ${msg.isSystemMessage ? "system-message-wrapper" : (msg.username === username ? "sent" : "received")}`}>
+              
+              {/* System Message Display */}
+              {msg.isSystemMessage ? (
+                <div className="system-message">
+                  <span className="system-text">{msg.message}</span>
                   <span className="timestamp">{msg.timestamp}</span>
                 </div>
-                <div className="message-content">{msg.message}</div>
-              </>
-            )}
-          </div>
-        ))}
+              ) : (
+                // Normal User Messages
+                <>
+                  <div className="message-header">
+                    <div className="user-info">
+                      <LetterAvatar username={msg.username} />
+                      <span className="username">{msg.username}</span>
+                    </div>
+                    <span className="timestamp">{msg.timestamp}</span>
+                  </div>
+                  <div className="message-content">{msg.message}</div>
+                </>
+              )}
+            </div>
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
 
