@@ -246,16 +246,14 @@ class Program {
   }
 };
 
-app.use(cors());
-app.use(express.json({ limit: '1mb' }));
+const corsOptions = {
+  origin: "https://dev-together-blush.vercel.app",
+  methods: ["GET", "POST"],
+  credentials: true,
+};
 
-const io = new Server(server, {
-  cors: {
-    origin: "https://dev-together-blush.vercel.app",
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
-});
+app.use(cors(corsOptions));
+
 
 // Map to store room data
 const roomsMap = new Map();

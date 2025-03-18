@@ -12,7 +12,12 @@ export const initSocket = async () => {
         reconnectionAttempts: Infinity
     };
     
-    const socket = io(process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000', options);
+
+const socket = io("https://dev-together-back.vercel.app", {
+  transports: ["websocket", "polling"], // Ensure compatibility
+  withCredentials: true, // Allow credentials
+});
+
     
     return new Promise((resolve) => {
         socket.on('connect', () => {
