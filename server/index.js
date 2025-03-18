@@ -453,12 +453,24 @@ function broadcastUserList(roomId) {
   });
   // Improved Chat Message Handling
   socket.on("SEND_MESSAGE", ({ roomId, username, message }) => {
-    if (!username) return;
+    if (!username || !roomId) return;
+
     const timestamp = new Date().toLocaleTimeString();
     const chatMessage = { username, message, timestamp };
+
+    // Ensure chatHistories exists for the room
+    if (!chatHistories.has(roomId)) {
+        chatHistories.set(roomId, []);
+    }
+
     chatHistories.get(roomId).push(chatMessage);
+
+    console.log(`📨 Message received from ${username}:`, message);
+    
+    // Broadcast message to all users in the room
     io.to(roomId).emit("RECEIVE_MESSAGE", chatMessage);
-  });
+});
+
 
   // Ensure consistent message handling between ACTIONS.SEND_MESSAGE and SEND_MESSAGE
 
