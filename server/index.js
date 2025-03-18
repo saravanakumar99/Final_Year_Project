@@ -246,20 +246,24 @@ class Program {
   }
 };
 
+
 app.use(cors({
-  origin: process.env.CLIENT_URL ,
+  origin: [process.env.CLIENT_URL], // Ensure it's an array
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true
 }));
+
 app.use(express.json({ limit: '1mb' }));
 
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL,
+    origin: process.env.CLIENT_URL, // Use only the .env variable
     methods: ["GET", "POST"],
-    credentials: true,
+    credentials: true
   },
+  transports: ["websocket", "polling"] // Ensure WebSockets work
 });
+
 
 
 // Map to store room data
