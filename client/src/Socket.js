@@ -13,7 +13,7 @@ export const initSocket = async () => {
     };
     
 
-    const socket = io("https://dev-together-back.vercel.app", {
+    const socket = io(process.env.REACT_APP_BACKEND_URL, {
         transports: ["websocket", "polling"],
         withCredentials: true,
       });
