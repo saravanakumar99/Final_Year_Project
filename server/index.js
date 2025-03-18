@@ -251,8 +251,9 @@ app.use(express.json({ limit: '1mb' }));
 
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: "https://dev-together-blush.vercel.app",
     methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
