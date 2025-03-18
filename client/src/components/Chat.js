@@ -105,7 +105,11 @@ const ChatBox = ({ roomId, username }) => {
     // Cleanup when component unmounts
     return () => {
       if (socketRef.current) {
+        console.log("Disconnecting user:", username);
         socketRef.current.emit("LEAVE_CHAT", { roomId, username });
+        socketRef.current.off("CHAT_HISTORY");
+        socketRef.current.off("RECEIVE_MESSAGE");
+        socketRef.current.off("connect_error");
         socketRef.current.disconnect();
         socketRef.current = null;
       }

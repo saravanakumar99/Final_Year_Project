@@ -303,7 +303,12 @@ io.on("connection", (socket) => {
     room.clients.push(newClient);
     
     // Send updated client list to all users
-    io.to(roomId).emit(ACTIONS.JOINED, { clients: room.clients, username, socketId: socket.id });
+    io.to(roomId).emit(ACTIONS.JOINED, { 
+        clients: room.clients, 
+        username, 
+        socketId: socket.id,
+        currentLanguage: room.language // Send current language to new user
+    });
 
     // Save join message in chat history
     const timestamp = new Date().toLocaleTimeString();
@@ -641,9 +646,13 @@ socket.on(ACTIONS.LANGUAGE_CHANGE, ({ roomId, language, username }) => {
 
   const client = room.clients.find(c => c.socketId === socket.id);
   if (!client || !client.isHost) {
+      // Only send error to the user who attempted to change the language
       socket.emit('error', { message: "Only the host can change the language" });
       return;
   }
+
+  // Only proceed if we have valid language and username
+  if (!language || !username) return;
 
   // Update language in the room
   room.language = language;
@@ -712,50 +721,78 @@ socket.on(ACTIONS.CHANGE_ROLE, ({ roomId, targetSocketId, newRole, username }) =
 
 
   socket.on('disconnect', () => {
+    const affectedRooms = [];
+    
     for (const [roomId, room] of roomsMap.entries()) {
-      const disconnectedClient = room.clients.find(c => c.socketId === socket.id);
-      if (disconnectedClient) {
-        room.clients = room.clients.filter(c => c.socketId !== socket.id);
+        const disconnectedClient = room.clients.find(c => c.socketId === socket.id);
+        if (disconnectedClient) {
+            affectedRooms.push({
+                roomId,
+                username: disconnectedClient.username,
+                wasHost: disconnectedClient.isHost
+            });
+        // Remove the client from the room
+            room.clients = room.clients.filter(c => c.socketId !== socket.id);
+            
+            // Process room updates outside the loop to avoid concurrent modification
+        }
+    }
+    
+    // Now process the affected rooms
+    for (const {roomId, username, wasHost} of affectedRooms) {
+        const room = roomsMap.get(roomId);
+        if (!room) continue;
+        
+        // Notify all users about the disconnection
         io.to(roomId).emit(ACTIONS.DISCONNECTED, {
-          clients: room.clients,
-          username: disconnectedClient.username,
-      });
-        // **Send system message to chat**
+            clients: room.clients,
+            username: username,
+        });
+        
+        // Send system message to chat
         const timestamp = new Date().toLocaleTimeString();
         const systemMessage = {
-          username: "System",
-          message: `${disconnectedClient.username} left the room.`,
-          timestamp: new Date().toLocaleTimeString(),
-      };
-      console.log("🔹 Sending system message:", systemMessage);
-      io.to(roomId).emit("RECEIVE_MESSAGE", systemMessage);
-      
-
-
-        if (disconnectedClient.isHost && room.clients.length > 0) {
-          const nextHost = room.clients.find(c => c.role === 'admin') || room.clients[0];
-          if (nextHost) {
-            nextHost.isHost = true;
-            nextHost.role = 'admin';
-
-            io.to(roomId).emit("HOST_CHANGED", {
-              previousHost: disconnectedClient.username,
-              newHost: nextHost.username
-            });
-            
-            const systemMessage = {
-              username: "System",
-              message: `joined the room.`,
-              timestamp: new Date().toLocaleTimeString(),
-          };
-          console.log("🔹 Sending system message:", systemMessage);
-          io.to(roomId).emit("RECEIVE_MESSAGE", systemMessage);
-          
-          }
+            username: "System",
+            message: `${username} left the room.`,
+            timestamp,
+        };
+        
+        if (!chatHistories.has(roomId)) chatHistories.set(roomId, []);
+        chatHistories.get(roomId).push(systemMessage);
+        io.to(roomId).emit("RECEIVE_MESSAGE", systemMessage);
+        
+        // Reassign host if needed
+        if (wasHost && room.clients.length > 0) {
+            const nextHost = room.clients.find(c => c.role === 'admin') || room.clients[0];
+            if (nextHost) {
+                nextHost.isHost = true;
+                nextHost.role = 'admin';
+                
+                const hostChangeMessage = {
+                    username: "System",
+                    message: `${nextHost.username} is now the host.`,
+                    timestamp,
+                };
+                
+                chatHistories.get(roomId).push(hostChangeMessage);
+                io.to(roomId).emit("HOST_CHANGED", {
+                    previousHost: username,
+                    newHost: nextHost.username
+                });
+                io.to(roomId).emit("RECEIVE_MESSAGE", hostChangeMessage);
+            }
         }
-      }
+        
+        // Clean up if no clients left
+        if (room.clients.length === 0) {
+            roomsMap.delete(roomId);
+            chatHistories.delete(roomId);
+        }
     }
-  });
+    
+    // Clean up user socket mapping
+    userSocketMap.delete(socket.id);
+});
 });
 
 const preprocessCode = (code, language) => {
