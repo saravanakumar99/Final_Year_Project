@@ -64,7 +64,7 @@ function EditorPage() {
         return;
       }
 
-      socketRef.current = await io( "http://localhost:5000");
+      socketRef.current = await io( process.env.REACT_APP_BACKEND_URL);
 
       function handleErrors(e) {
         console.log('socket error', e);
