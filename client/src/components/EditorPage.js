@@ -97,46 +97,34 @@ function EditorPage() {
       socketRef.current.on(ACTIONS.JOINED, ({ clients, username, socketId, isFirstUser, isReconnecting }) => {
         // Update clients list immediately
         if (clients && Array.isArray(clients)) {
-          setClients([...clients]);
+            setClients([...clients]);
         }
-        
+    
         // Find the current client by socket ID
         const currentClient = clients.find(client => client.socketId === socketRef.current.id);
         if (currentClient) {
-          // Set current user's role and host status based on client data
-          setCurrentUserRole(currentClient.role);
-          setIsHost(currentClient.isHost);
-
-          // Show appropriate welcome message based on role system
-          if (username === location.state?.username) {
-            if (isReconnecting) {
-              // Reconnecting user
-              toast.success('Reconnected to the room.');
-              if (currentClient.isHost) {
-                toast.success('You are still the host of this room.');
-              }
-            } else if (isFirstUser) {
-              // First user is both host and admin
-              setCurrentUserRole('admin');
-              setIsHost(true);
-              toast.success('Welcome! You are the host of this room.');
-            } else if (currentClient.role === 'admin') {
-              // Non-host admin
-              toast.success('You are an admin now.');
-            } else {
-              // Viewer
-              toast.success('You are a viewer. You can view the code.');
+            setCurrentUserRole(currentClient.role);
+            setIsHost(currentClient.isHost);
+    
+            if (username === location.state?.username) {
+                if (isReconnecting) {
+                    toast.success('Reconnected to the room.');
+                    if (currentClient.isHost) {
+                        toast.success('You are still the host of this room.');
+                    }
+                } else if (isFirstUser) {
+                    setCurrentUserRole('host'); // ✅ Set the correct role as 'host'
+                    setIsHost(true);
+                    toast.success('Welcome! You are the Host of this room.');
+                } else if (currentClient.role === 'admin') {
+                    toast.success('You are an admin now.');
+                } else {
+                    toast.success('You are a viewer. You can view the code.');
+                }
             }
-          } else {
-            // Another user joined
-            if (isReconnecting) {
-              toast.success(`${username} reconnected to the room.`);
-            } else {
-              toast.success(`${username} joined the room.`);
-            }
-          }
         }
-      });
+    });
+    
 
       socketRef.current.on(ACTIONS.UPDATE_USERS, ({ clients }) => {
         console.log("📢 Updating users list:", clients);
@@ -217,12 +205,13 @@ function EditorPage() {
 
       // Listen for language changes
       socketRef.current.on(ACTIONS.LANGUAGE_CHANGE, ({ language, username }) => {
-        if (language) {
-          setSelectedLanguage(language);
-          toast.success(`Programming language changed to ${language.charAt(0).toUpperCase() + language.slice(1)}`);
-          
-        }
-      });
+        if (!language || !username) return; // ✅ Prevent undefined language messages
+    
+        if (username === location.state?.username) { // ✅ Show only to the one trying to change
+            toast.error("Only the host can change the language");
+        } 
+    });
+    
 
       // Listen for errors
       socketRef.current.on('error', ({ message }) => {
