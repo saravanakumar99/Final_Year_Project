@@ -342,15 +342,29 @@ function broadcastUserList(roomId) {
 
   // Handle chat message joining
   socket.on("JOIN_CHAT", ({ roomId, username }) => {
-    if (!username) return;
+    console.log(`📢 ${username} joined room ${roomId}`);
     socket.join(roomId);
-    userSocketMap.set(socket.id, username);
 
-    if (!chatHistories.has(roomId)) {
-      chatHistories.set(roomId, []);
+    // Send existing chat history immediately
+    if (chatHistories.has(roomId)) {
+        socket.emit("CHAT_HISTORY", chatHistories.get(roomId));
+    } else {
+        chatHistories.set(roomId, []);
     }
-    socket.emit("CHAT_HISTORY", chatHistories.get(roomId));
-  });
+
+    // Notify others in the room
+    io.to(roomId).emit("USER_JOINED", { username, roomId });
+
+    // Send welcome message
+    const systemMessage = {
+        username: "System",
+        message: `${username} joined the room.`,
+        timestamp: new Date().toLocaleTimeString()
+    };
+    chatHistories.get(roomId).push(systemMessage);
+    io.to(roomId).emit("RECEIVE_MESSAGE", systemMessage);
+});
+
   socket.on(ACTIONS.LEAVE_ROOM, ({ roomId, username }) => {
     if (!roomId || !username) return;
 

@@ -54,6 +54,7 @@ function EditorPage() {
   const [isChangelogOpen, setIsChangelogOpen] = useState(false);
   const [code, setCode] = useState('');
   const [history, setHistory] = useState([]); 
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
 
   const navigate = useNavigate();
 
@@ -64,7 +65,12 @@ function EditorPage() {
         return;
       }
 
-      socketRef.current = await io( process.env.REACT_APP_BACKEND_URL);
+      // Initialize socket connection
+      socketRef.current = io(process.env.REACT_APP_BACKEND_URL, {
+        transports: ['websocket'], // Force WebSocket transport for faster initial connection
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000
+      });
 
       function handleErrors(e) {
         console.log('socket error', e);
@@ -72,18 +78,27 @@ function EditorPage() {
         reactNavigator('/');
       }
 
+      // Connection event handlers
+      socketRef.current.on('connect', () => {
+        console.log('Socket connected');
+        setIsSocketConnected(true);
+        
+        // Join room immediately after connection
+        socketRef.current.emit(ACTIONS.JOIN, {
+          roomId,
+          username: location.state?.username,
+        });
+      });
+
       socketRef.current.on('connect_error', (err) => handleErrors(err));
       socketRef.current.on('connect_failed', (err) => handleErrors(err));
 
-      socketRef.current.emit(ACTIONS.JOIN, {
-        roomId,
-        username: location.state?.username,
-      });
-
       // Listening for joined event
-      socketRef.current.on(ACTIONS.JOINED, ({ clients, username, socketId, isFirstUser ,isReconnecting }) => {
-        // Update clients list
-        setClients(clients);
+      socketRef.current.on(ACTIONS.JOINED, ({ clients, username, socketId, isFirstUser, isReconnecting }) => {
+        // Update clients list immediately
+        if (clients && Array.isArray(clients)) {
+          setClients([...clients]);
+        }
         
         // Find the current client by socket ID
         const currentClient = clients.find(client => client.socketId === socketRef.current.id);
@@ -119,11 +134,10 @@ function EditorPage() {
             } else {
               toast.success(`${username} joined the room.`);
             }
-            // Add system message for user joining
-             // Add system message for user joining
           }
         }
       });
+
       socketRef.current.on(ACTIONS.UPDATE_USERS, ({ clients }) => {
         console.log("📢 Updating users list:", clients);
         if (clients && Array.isArray(clients)) {
@@ -134,36 +148,33 @@ function EditorPage() {
           });
         }
       });
-
+      
     
-    socketRef.current.on("HOST_CHANGED", ({ previousHost, newHost,clients }) => {
-      console.log(`🎙 Host changed: ${previousHost} ➝ ${newHost}`);
-  
-      if (clients && Array.isArray(clients)) {
-        setClients([...clients]);
-      }
-      if (newHost === location.state?.username) {
-          toast.success('You are now the host of this room.');
-          setIsHost(true);
-          setCurrentUserRole('admin'); // Host should also be admin
-      }
-  
-     
-  });
-  
+      socketRef.current.on("HOST_CHANGED", ({ previousHost, newHost,clients }) => {
+        console.log(`🎙 Host changed: ${previousHost} ➝ ${newHost}`);
+    
+        if (clients && Array.isArray(clients)) {
+          setClients([...clients]);
+        }
+        if (newHost === location.state?.username) {
+            toast.success('You are now the host of this room.');
+            setIsHost(true);
+            setCurrentUserRole('admin'); // Host should also be admin
+        }
+    
+       
+    });
+      
       
       // Listen for chat messages
       socketRef.current.on("RECEIVE_MESSAGE", (data) => {
-    console.log("📩 Received message:", data);
-
-    
-    });
-socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
-  console.log("📜 Received history log:", historyLog);
-  setHistory(historyLog);
-});
-
-   
+        console.log("📩 Received message:", data);
+      });
+      
+      socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
+        console.log("📜 Received history log:", historyLog);
+        setHistory(historyLog);
+      });
 
       // Listening for disconnected
       socketRef.current.on(ACTIONS.DISCONNECTED, ({ username, clients }) => {
@@ -175,36 +186,32 @@ socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
           setClients([...clients]); // Create a new array to ensure state update
         }
       
+        // Add system message
+        
       });
+      
     
-    
-    
-    
-
       // Listen for role changes
       socketRef.current.on(ACTIONS.ROLE_CHANGED, ({ clients, changedUserId, username, newRole }) => {
-        setClients(clients);
-        
-        // Update current user's role if it was changed
-        const currentClient = clients.find(client => client.socketId === socketRef.current.id);
-        const changedUser = clients.find(client => client.socketId === changedUserId);
-        
-        if (currentClient) {
-          setCurrentUserRole(currentClient.role);
-          setIsHost(currentClient.isHost);
+        if (clients && Array.isArray(clients)) {
+          setClients([...clients]);
           
-          // Show role change message only to the affected user
-          if (currentClient.socketId === changedUserId) {
-            if (currentClient.role === 'admin') {
-              toast.success('You are an admin now.');
-            } else {
-              toast.success('You are a viewer now. You can only view');
+          // Update current user's role if it was changed
+          const currentClient = clients.find(client => client.socketId === socketRef.current.id);
+          
+          if (currentClient) {
+            setCurrentUserRole(currentClient.role);
+            setIsHost(currentClient.isHost);
+            
+            // Show role change message only to the affected user
+            if (currentClient.socketId === changedUserId) {
+              if (currentClient.role === 'admin') {
+                toast.success('You are an admin now.');
+              } else {
+                toast.success('You are a viewer now. You can only view');
+              }
             }
           }
-        }
-        
-        // Add system message for role change
-        if (changedUser) {          
         }
       });
 
@@ -214,7 +221,6 @@ socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
           setSelectedLanguage(language);
           toast.success(`Programming language changed to ${language.charAt(0).toUpperCase() + language.slice(1)}`);
           
-          // Add system message for language change
         }
       });
 
@@ -250,13 +256,13 @@ socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
         socketRef.current?.off(ACTIONS.SYNC_CODE);
         socketRef.current?.off(ACTIONS.RECEIVE_MESSAGE);
         socketRef.current.off(ACTIONS.UPDATE_USERS);
-        socketRef.current.off("UPDATE_HISTORY")
+        socketRef.current.off("UPDATE_HISTORY");
         socketRef.current?.off('error');
       };
     };
 
     init();
-  }, [location.state?.username,reactNavigator,roomId]);
+  }, [location.state?.username, reactNavigator, roomId]);
 
   const handleRoleChange = (socketId, newRole) => {
     const targetClient = clients.find(c => c.socketId === socketId);
@@ -441,8 +447,7 @@ socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
             navigate("/");
         }, 500);
     }
-};
-
+  };
 
   const codeNeedsInput = (code) => {
     if (!code) return false;
@@ -493,6 +498,21 @@ socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
   const toggleChat = () => {
     setIsChatOpen((prev) => !prev);
   };
+  
+  // Render loading state while socket is connecting
+  if (!isSocketConnected) {
+    return (
+      <div className="container-fluid vh-100 d-flex justify-content-center align-items-center bg-dark text-light">
+        <div className="text-center">
+          <div className="spinner-border text-light mb-3" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <h4>Connecting to room...</h4>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="container-fluid vh-100 d-flex flex-column">
       <div className="row flex-grow-1">
@@ -507,7 +527,13 @@ socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
           <hr style={{ marginTop: "2rem" }} />
           <div className="d-flex flex-column flex-grow-1 overflow-auto">
             <span className="mb-2">Connected Users</span>
-            {clients.map((client) => renderClient(client))}
+            <div className="connected-users-list">
+              {clients.length > 0 ? (
+                clients.map((client) => renderClient(client))
+              ) : (
+                <div className="text-muted">Loading users...</div>
+              )}
+            </div>
           </div>
           <hr />
           <div className="mt-auto mb-3">
@@ -605,13 +631,13 @@ socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
         Import File
       </button>
       <button 
-  className="history-toggle-btn" 
-  onClick={() => setShowHistory(!showHistory)}
->
-  {showHistory ? "Hide History" : "View History"}
-</button>
+        className="history-toggle-btn" 
+        onClick={() => setShowHistory(!showHistory)}
+      >
+        {showHistory ? "Hide History" : "View History"}
+      </button>
 
-{showHistory && <HistoryLog history={history} />}
+      {showHistory && <HistoryLog history={history} />}
       <button
         className="save-file-btn"
         onClick={handleSaveFile}
@@ -667,9 +693,7 @@ socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
           zIndex: 1050,
         }}
       >
-
         {isChatOpen ? "Close AI" : "AI Chat"}
-
       </button>
 
       {/* Chat Section */}

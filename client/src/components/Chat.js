@@ -62,13 +62,17 @@ const ChatBox = ({ roomId, username }) => {
       });
 
       // Load Chat History
-      socketRef.current.on("CHAT_HISTORY", (history) => {
+     socketRef.current.on("CHAT_HISTORY", (history) => {
         console.log("📜 Loading chat history:", history);
-        setMessages(history.map(msg => ({
+        // Make sure system messages are properly identified in history
+        const processedHistory = history.map(msg => ({
           ...msg,
           isSystemMessage: msg.username === "System"
-        })));
+        }));
+        setMessages(processedHistory);
       });
+      
+    
 
       // Receive New Messages
       socketRef.current.on("RECEIVE_MESSAGE", (data) => {
