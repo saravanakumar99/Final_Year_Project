@@ -255,10 +255,11 @@ app.use(express.json({ limit: '1mb' }));
 
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "https://dev-together-blush.vercel.app",
+    origin: ["https://dev-together-blush.vercel.app", process.env.CLIENT_URL],
     methods: ["GET", "POST"],
     credentials: true,
   },
+  transports: ['polling'], // Force polling
 });
 
 
