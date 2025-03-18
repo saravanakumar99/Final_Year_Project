@@ -10,7 +10,6 @@ import HistoryLog from "./HistoryLog";
 import {
   useNavigate,
   useLocation,
-  Navigate,
   useParams,
 } from "react-router-dom";
 import { toast } from "react-hot-toast";
@@ -54,11 +53,8 @@ function EditorPage() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isChangelogOpen, setIsChangelogOpen] = useState(false);
   const [code, setCode] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [messageInput, setMessageInput] = useState('');
   const [history, setHistory] = useState([]); 
 
-  const codeRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -68,7 +64,7 @@ function EditorPage() {
         return;
       }
 
-      socketRef.current = await io(process.env.REACT_APP_BACKEND_URL || "http://localhost:5000");
+      socketRef.current = await io( "http://localhost:5000");
 
       function handleErrors(e) {
         console.log('socket error', e);
@@ -125,18 +121,6 @@ function EditorPage() {
             }
             // Add system message for user joining
              // Add system message for user joining
-      const timestamp = new Date().toLocaleTimeString();
-      const joinMessage = isReconnecting 
-      ? `${username} reconnected to the room as ${currentClient.role}`
-      : `${username} joined the room as ${currentClient.role}`;
-      
-      // Add directly to messages array for immediate display
-      setMessages(prev => [...prev, {
-        username: 'System',
-        message: joinMessage,
-        timestamp,
-        isSystemMessage: true
-      }]);
           }
         }
       });
@@ -164,12 +148,7 @@ function EditorPage() {
           setCurrentUserRole('admin'); // Host should also be admin
       }
   
-      setMessages(prev => [...prev, {
-          username: 'System',
-          message: `${newHost} is now the host.`,
-          timestamp: new Date().toLocaleTimeString(),
-          isSystemMessage: true
-      }]);
+     
   });
   
       
@@ -177,17 +156,8 @@ function EditorPage() {
       socketRef.current.on("RECEIVE_MESSAGE", (data) => {
     console.log("📩 Received message:", data);
 
-    setMessages(prev => {
-        const newMessages = [...prev, {
-            username: data.username,
-            message: data.message,
-            timestamp: data.timestamp,
-            isSystemMessage: data.username === "System"
-        }];
-        console.log("📜 Updated messages array:", newMessages);
-        return newMessages;
+    
     });
-});
 socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
   console.log("📜 Received history log:", historyLog);
   setHistory(historyLog);
@@ -205,13 +175,6 @@ socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
           setClients([...clients]); // Create a new array to ensure state update
         }
       
-        // Add system message
-        setMessages(prev => [...prev, {
-          username: 'System',
-          message: `${username} left the room.`,
-          timestamp: new Date().toLocaleTimeString(),
-          isSystemMessage: true
-        }]);
       });
     
     
@@ -241,14 +204,7 @@ socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
         }
         
         // Add system message for role change
-        if (changedUser) {
-          const roleChangeMessage = `${changedUser.username}'s role changed to ${changedUser.role}`;
-          setMessages(prev => [...prev, {
-            username: 'System',
-            message: roleChangeMessage,
-            timestamp: new Date().toLocaleTimeString(),
-            isSystemMessage: true
-          }]);
+        if (changedUser) {          
         }
       });
 
@@ -259,17 +215,6 @@ socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
           toast.success(`Programming language changed to ${language.charAt(0).toUpperCase() + language.slice(1)}`);
           
           // Add system message for language change
-          const timestamp = new Date().toLocaleTimeString();
-          const languageChangeMessage = username ? 
-            `${username} changed programming language to ${language}` : 
-            `Programming language changed to ${language}`;
-          
-          setMessages(prev => [...prev, {
-            username: 'System',
-            message: languageChangeMessage,
-            timestamp,
-            isSystemMessage: true
-          }]);
         }
       });
 
@@ -311,7 +256,7 @@ socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
     };
 
     init();
-  }, []);
+  }, [location.state?.username,reactNavigator,roomId]);
 
   const handleRoleChange = (socketId, newRole) => {
     const targetClient = clients.find(c => c.socketId === socketId);

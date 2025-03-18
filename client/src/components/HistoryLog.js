@@ -6,25 +6,10 @@ const HistoryLog = ({ history }) => {
   const [search, setSearch] = useState('');
   const [selectedEntry, setSelectedEntry] = useState(null);
   const logRef = useRef(null);
-  const [groupedHistory, setGroupedHistory] = useState({});
 
   // Group history entries by day
   useEffect(() => {
-    if (!history?.length) return;
-    
-    const grouped = history.reduce((acc, entry) => {
-      // Create a date string from the timestamp
-      const date = new Date();
-      const dateString = date.toLocaleDateString();
-      
-      if (!acc[dateString]) {
-        acc[dateString] = [];
-      }
-      acc[dateString].push(entry);
-      return acc;
-    }, {});
-    
-    setGroupedHistory(grouped);
+    if (!history?.length) return; 
   }, [history]);
 
   // Scroll to bottom when new entries are added

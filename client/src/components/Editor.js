@@ -110,7 +110,7 @@ editorRef.current.on("change", (instance, changes) => {
       }
     };
 
-  }, [isAdmin, isHost]); // Reinitialize when role changes
+  }, [isAdmin, isHost,code,language,onCodeChange,roomId,socketRef]); // Reinitialize when role changes
 
   // Update code when it changes externally
   useEffect(() => {
@@ -124,7 +124,7 @@ editorRef.current.on("change", (instance, changes) => {
         }
       }
     }
-  }, [code]);
+  }, [code,isAdmin,isHost]);
 
   // Update editor mode when language changes
   useEffect(() => {
@@ -139,18 +139,20 @@ editorRef.current.on("change", (instance, changes) => {
     }
   }, [language]);
 
-  // Handle language change
-  const handleLanguageChange = (newLanguage) => {
-    if (!isHost) {
-      toast.error("Only the host can change the programming language");
-      return;
+  useEffect(() => {
+    if (socketRef.current && language) {
+      socketRef.current.emit(ACTIONS.LANGUAGE_CHANGE, {
+        roomId,
+      });
     }
+  }, [language, socketRef, roomId]);
+  // Handle language change
+ 
 
-    socketRef.current.emit(ACTIONS.LANGUAGE_CHANGE, {
-      roomId,
-      language: newLanguage
-    });
-  };
+    // socketRef.current.emit(ACTIONS.LANGUAGE_CHANGE, {
+    //   roomId,
+    // });
+
 
   return (
     <div className="editor-wrapper">
