@@ -246,26 +246,13 @@ class Program {
   }
 };
 
-// Update your cors configuration for Express
-const corsOptions = {
+app.use(cors({
   origin: "https://dev-together-blush.vercel.app", // ✅ Allow frontend URL
   methods: ["GET", "POST"],
-  allowedHeaders: ["Content-Type"],
   credentials: true,
-};
-
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
-// app.use(express.json({ limit: '1mb' }));
-
-const io = new Server(server, {
-  cors: {
-    origin: "https://dev-together-blush.vercel.app",
-    methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type"],
-  credentials: true,
-  },
-});
+}
+))
+app.use(express.json())
 
 
 // Map to store room data
