@@ -462,7 +462,7 @@ socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
   const runCode = async (input) => {
     setIsCompiling(true);
     try {
-      const response = await axios.post("http://localhost:5000/compile", {
+      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/compile`, {
         code,
         language: selectedLanguage,
         stdin: input,
