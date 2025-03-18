@@ -246,7 +246,13 @@ class Program {
   }
 };
 
-app.use(cors());
+// Update your cors configuration for Express
+app.use(cors({
+  origin: "https://dev-together-blush.vercel.app",
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"],
+  credentials: true
+}));
 app.use(express.json({ limit: '1mb' }));
 
 const io = new Server(server, {
