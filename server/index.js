@@ -246,13 +246,18 @@ class Program {
   }
 };
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.CLIENT_URL || "https://dev-together-blush.vercel.app",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  credentials: true
+}));
 app.use(express.json({ limit: '1mb' }));
 
 const io = new Server(server, {
   cors: {
-    origin: "https://dev-together-blush.vercel.app",
+    origin: process.env.CLIENT_URL || "https://dev-together-blush.vercel.app",
     methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
