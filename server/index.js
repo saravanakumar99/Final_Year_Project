@@ -246,19 +246,16 @@ class Program {
   }
 };
 
-const corsOptions = {
-  origin: "https://dev-together-blush.vercel.app",
-  methods: ["GET", "POST"],
-  allowedHeaders: ["Content-Type"],
-  credentials: true,
-};
+app.use(cors());
+app.use(express.json({ limit: '1mb' }));
 
-app.use(cors(corsOptions)); // Apply CORS before defining routes
-app.options("*", cors(corsOptions));
-
-// Initialize Socket.IO with CORS options
 const io = new Server(server, {
-  cors: corsOptions
+  cors: {
+    origin: "https://dev-together-blush.vercel.app",
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"],
+  credentials: true,
+  },
 });
 
 
