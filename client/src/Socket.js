@@ -13,10 +13,10 @@ export const initSocket = async () => {
     };
     
 
-const socket = io("https://dev-together-back.vercel.app", {
-  transports: ["websocket", "polling"], // Ensure compatibility
-  withCredentials: true, // Allow credentials
-});
+    const socket = io("https://dev-together-back.vercel.app", {
+        transports: ["websocket", "polling"],
+        withCredentials: true,
+      });
 
     
     return new Promise((resolve) => {

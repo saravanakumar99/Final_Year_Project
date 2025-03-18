@@ -249,10 +249,12 @@ class Program {
 const corsOptions = {
   origin: "https://dev-together-blush.vercel.app",
   methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"],
   credentials: true,
 };
 
-app.use(cors(corsOptions));
+app.use(cors(corsOptions)); // Apply CORS before defining routes
+app.options("*", cors(corsOptions));
 
 
 // Map to store room data
