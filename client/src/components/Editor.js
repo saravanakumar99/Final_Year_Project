@@ -69,30 +69,39 @@ function Editor({ socketRef, roomId, onCodeChange, isAdmin, isHost, language, co
 editorRef.current.getWrapperElement().style.overflow = "auto"; // ✅ Enables scrolling
 
         editorRef.current.setValue(code || '');
-        editorRef.current.refresh();
+        requestAnimationFrame(() => {
+          editorRef.current.refresh();
+        });
 
         let typingTimeout = null;
 let lastCode = "";
 
+// Replace your current change handler with this debounced version
 editorRef.current.on("change", (instance, changes) => {
-    const { origin } = changes;
-    const newCode = instance.getValue();
+  const { origin } = changes;
+  const newCode = instance.getValue();
 
-    if (origin !== "setValue" && origin !== "remote") {
-        if (canEdit) {
-            onCodeChange(newCode);
-
-            if (newCode !== lastCode) {
-              lastCode = newCode;
-              socketRef.current?.emit(ACTIONS.CODE_CHANGE, {
-                  roomId,
-                  code: newCode,
-                  username: localStorage.getItem("username") || "Guest",
-              });
-          }
+  if (origin !== "setValue" && origin !== "remote") {
+      if (canEdit) {
+          onCodeChange(newCode);
+          
+          // Clear any existing timeout
+          clearTimeout(typingTimeout);
+          
+          // Set a new timeout to delay the socket emission
+          typingTimeout = setTimeout(() => {
+              if (newCode !== lastCode) {
+                  lastCode = newCode;
+                  socketRef.current?.emit(ACTIONS.CODE_CHANGE, {
+                      roomId,
+                      code: newCode,
+                      username: localStorage.getItem("username") || "Guest",
+                  });
+              }
+          }, 100); // 100ms delay
       } else {
           if (instance.getValue() !== code) {
-              instance.setValue(code || ''); // Prevent overwriting if already correct
+              instance.setValue(code || '');
           }
           toast.error("You are in view-only mode");
       }
@@ -133,7 +142,9 @@ editorRef.current.on("change", (instance, changes) => {
       try {
         const mode = LANGUAGE_MODES[language]?.name || 'javascript';
         editorRef.current.setOption("mode", mode);
-        editorRef.current.refresh();
+        requestAnimationFrame(() => {
+          editorRef.current.refresh();
+        });
       } catch (err) {
         console.error("Error updating language mode:", err);
       }
