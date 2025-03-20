@@ -82,22 +82,21 @@ editorRef.current.on("change", (instance, changes) => {
         if (canEdit) {
             onCodeChange(newCode);
 
-            clearTimeout(typingTimeout);
-            typingTimeout = setTimeout(() => {
-                if (newCode !== lastCode && Math.abs(newCode.length - lastCode.length) >= 10) {
-                    lastCode = newCode;
-                    socketRef.current?.emit(ACTIONS.CODE_CHANGE, {
-                        roomId,
-                        code: newCode,
-                        username: localStorage.getItem("username") || "Guest",
-                    });
-                }
-            }, 1000); // Only log changes after 1 second of inactivity
-        } else {
-            instance.setValue(code || '');
-            toast.error("You are in view-only mode");
-        }
-    }
+            if (newCode !== lastCode) {
+              lastCode = newCode;
+              socketRef.current?.emit(ACTIONS.CODE_CHANGE, {
+                  roomId,
+                  code: newCode,
+                  username: localStorage.getItem("username") || "Guest",
+              });
+          }
+      } else {
+          if (instance.getValue() !== code) {
+              instance.setValue(code || ''); // Prevent overwriting if already correct
+          }
+          toast.error("You are in view-only mode");
+      }
+  }
 });
 
       }
