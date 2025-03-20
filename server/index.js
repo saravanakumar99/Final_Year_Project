@@ -7,245 +7,18 @@ const cors = require("cors");
 const axios = require("axios");
 const server = http.createServer(app);
 require("dotenv").config();
-
 const languageConfig = {
-  python3: { 
-    engine: "python", 
-    version: "3.10",
-    extension: "py",
-    template: code => {
-      // Check if code contains imports
-      const lines = code.split('\n');
-      let imports = [];
-      let mainCode = [];
-      let hasClass = false;
-
-      lines.forEach(line => {
-        if (line.trim().startsWith("import ") || line.trim().startsWith("from ")) {
-          imports.push(line);
-        } else if (line.trim().startsWith("class ")) {
-          hasClass = true;
-          mainCode.push(line);
-        } else {
-          mainCode.push(line);
-        }
-      });
-
-      // If there are imports, place them at the top
-      if (imports.length > 0) {
-        return `${imports.join('\n')}\n\n${mainCode.join('\n')}`;
-      }
-
-      // If no special handling needed, return as is
-      return code;
-    },
-    compile: false
-  },
-  java: { 
-    engine: "java", 
-    version: "15.0.2",
-    extension: "java",
-    template: code => {
-      // Check if code already contains a class definition
-      if (code.includes("class ") || code.includes("public class ")) {
-        return code; // Return as-is if it already has a class definition
-      }
-      
-      // Check if code contains package or import statements
-      const lines = code.split('\n');
-      let imports = [];
-      let mainCode = [];
-      let hasPackage = false;
-      
-      lines.forEach(line => {
-        if (line.trim().startsWith("package ")) {
-          hasPackage = true;
-          imports.unshift(line); // Add package declaration at the start
-        } else if (line.trim().startsWith("import ")) {
-          imports.push(line);
-        } else {
-          mainCode.push(line);
-        }
-      });
-      
-      // If code doesn't have its own class, wrap it in a Main class
-      if (imports.length > 0 || hasPackage) {
-        return `${imports.join('\n')}
-
-public class Main {
-    public static void main(String[] args) {
-        ${mainCode.join('\n')}
-    }
-}`;
-      } else {
-        return `public class Main {
-    public static void main(String[] args) {
-        ${code}
-    }
-}`;
-      }
-    },
-    compile: true
-  },
-  cpp: { 
-    engine: "c++",
-    version: "10.2.0",
-    extension: "cpp",
-    template: code => {
-      const lines = code.split('\n');
-      let includes = [];
-      let namespaces = [];
-      let mainCode = [];
-      let hasClass = false;
-      let hasMain = false;
-
-      lines.forEach(line => {
-        if (line.trim().startsWith("#include")) {
-          includes.push(line);
-        } else if (line.trim().startsWith("using namespace")) {
-          namespaces.push(line);
-        } else if (line.trim().startsWith("class ")) {
-          hasClass = true;
-          mainCode.push(line);
-        } else if (line.trim().includes("main(")) {
-          hasMain = true;
-          mainCode.push(line);
-        } else {
-          mainCode.push(line);
-        }
-      });
-
-      // If no includes are present, add standard ones
-      if (includes.length === 0) {
-        includes.push("#include <iostream>");
-      }
-
-      // If no using namespace std, add it
-      if (!namespaces.some(ns => ns.includes("std"))) {
-        namespaces.push("using namespace std;");
-      }
-
-      // If no main function and no class definition, wrap in main
-      if (!hasMain && !hasClass) {
-        return `${includes.join('\n')}\n${namespaces.join('\n')}\n\nint main() {\n    ${mainCode.join('\n    ')}\n    return 0;\n}`;
-      }
-
-      // If has class but no main, add main after class
-      if (hasClass && !hasMain) {
-        return `${includes.join('\n')}\n${namespaces.join('\n')}\n\n${mainCode.join('\n')}\n\nint main() {\n    return 0;\n}`;
-      }
-
-      // If everything is present, just organize the code
-      return `${includes.join('\n')}\n${namespaces.join('\n')}\n\n${mainCode.join('\n')}`;
-    },
-    compile: true
-  },
-  c: { 
-    engine: "c",
-    version: "10.2.0",
-    extension: "c",
-    template: code => {
-      const lines = code.split('\n');
-      let includes = [];
-      let mainCode = [];
-      let hasMain = false;
-      let hasStruct = false;
-
-      lines.forEach(line => {
-        if (line.trim().startsWith("#include")) {
-          includes.push(line);
-        } else if (line.trim().startsWith("struct ")) {
-          hasStruct = true;
-          mainCode.push(line);
-        } else if (line.trim().includes("main(")) {
-          hasMain = true;
-          mainCode.push(line);
-        } else {
-          mainCode.push(line);
-        }
-      });
-
-      // If no includes are present, add stdio
-      if (includes.length === 0) {
-        includes.push("#include <stdio.h>");
-      }
-
-      // If no main function and no struct definition, wrap in main
-      if (!hasMain && !hasStruct) {
-        return `${includes.join('\n')}\n\nint main() {\n    ${mainCode.join('\n    ')}\n    return 0;\n}`;
-      }
-
-      // If has struct but no main, add main after struct
-      if (hasStruct && !hasMain) {
-        return `${includes.join('\n')}\n\n${mainCode.join('\n')}\n\nint main() {\n    return 0;\n}`;
-      }
-
-      // If everything is present, just organize the code
-      return `${includes.join('\n')}\n\n${mainCode.join('\n')}`;
-    },
-    compile: true
-  },
-  nodejs: { 
-    engine: "node",
-    version: "15.8.0",
-    extension: "js",
-    template: code => code,
-    compile: false
-  },
-  ruby: { 
-    engine: "ruby",
-    version: "3.0.0",
-    extension: "rb",
-    template: code => code,
-    compile: false
-  },
-  go: { 
-    engine: "go",
-    version: "1.16.2",
-    extension: "go",
-    template: code => `
-package main
-
-import "fmt"
-
-func main() {
-    ${code}
-}`,
-    compile: true
-  },
-  swift: { 
-    engine: "swift",
-    version: "5.3.3",
-    extension: "swift",
-    template: code => code,
-    compile: true
-  },
-  rust: { 
-    engine: "rust",
-    version: "1.50.0",
-    extension: "rs",
-    template: code => `
-fn main() {
-    ${code}
-}`,
-    compile: true
-  },
-  csharp: { 
-    engine: "c#",
-    version: "5.0.201",
-    extension: "cs",
-    template: code => `
-using System;
-
-class Program {
-    static void Main() {
-        ${code}
-    }
-}`,
-    compile: true
-  }
+  python3: { engine: "python", version: "3.10", extension: "py", template: code => code, compile: false },
+  java: { engine: "java", version: "15.0.2", extension: "java", template: code => code,  filename: "Main.java",compile: true },
+  cpp: { engine: "c++", version: "10.2.0", extension: "cpp", template: code => code, compile: true },
+  c: { engine: "c", version: "10.2.0", extension: "c", template: code => code, compile: true },
+  nodejs: { engine: "node", version: "15.8.0", extension: "js", template: code => code, compile: false },
+  ruby: { engine: "ruby", version: "3.0.0", extension: "rb", template: code => code, compile: false },
+  go: { engine: "go", version: "1.16.2", extension: "go", template: code => code, compile: true },
+  swift: { engine: "swift", version: "5.3.3", extension: "swift", template: code => code, compile: true },
+  rust: { engine: "rust", version: "1.50.0", extension: "rs", template: code => code, compile: true },
+  csharp: { engine: "c#", version: "5.0.201", extension: "cs", template: code => code, compile: true }
 };
-
 
 app.use(cors({
   origin: [process.env.CLIENT_URL], // Ensure it's an array
@@ -263,8 +36,6 @@ const io = new Server(server, {
   },
   transports: ["websocket", "polling"] // Ensure WebSockets work
 });
-
-
 
 // Map to store room data
 const roomsMap = new Map();
@@ -303,12 +74,7 @@ io.on("connection", (socket) => {
     room.clients.push(newClient);
     
     // Send updated client list to all users
-    io.to(roomId).emit(ACTIONS.JOINED, { 
-        clients: room.clients, 
-        username, 
-        socketId: socket.id,
-        currentLanguage: room.language // Send current language to new user
-    });
+    io.to(roomId).emit(ACTIONS.JOINED, { clients: room.clients, username, socketId: socket.id });
 
     // Save join message in chat history
     const timestamp = new Date().toLocaleTimeString();
@@ -356,7 +122,6 @@ function broadcastUserList(roomId) {
     }
     socket.emit("CHAT_HISTORY", chatHistories.get(roomId));
   });
-
   socket.on(ACTIONS.LEAVE_ROOM, ({ roomId, username }) => {
     if (!roomId || !username) return;
 
@@ -414,7 +179,7 @@ function broadcastUserList(roomId) {
 
             // Save disconnect message in chat history
             const timestamp = new Date().toLocaleTimeString();
-            const disconnectMessage = { username: "System", message: `${username} disconnected.`, timestamp };
+            const disconnectMessage = { username: "System", message: `${username} left the room.`, timestamp };
             
             if (!chatHistories.has(roomId)) chatHistories.set(roomId, []);
             chatHistories.get(roomId).push(disconnectMessage);
@@ -436,10 +201,16 @@ function broadcastUserList(roomId) {
                 }
             }
 
-            if (room.clients.length === 0) roomsMap.delete(roomId);
+            // 🛠 **Clear chat history when the last user leaves**
+            if (room.clients.length === 0) {
+                roomsMap.delete(roomId);  // Delete the room
+                chatHistories.delete(roomId);  // **Clear chat history**
+                console.log(`Room ${roomId} deleted and chat history cleared.`);
+            }
         }
     }
 });
+
   
   socket.on("TOGGLE_CHAT_UI", ({ roomId, username, isOpen }) => {
     if (roomId && username) {
@@ -459,18 +230,12 @@ function broadcastUserList(roomId) {
   });
   // Improved Chat Message Handling
   socket.on("SEND_MESSAGE", ({ roomId, username, message }) => {
-    if (!username || !roomId) return;
-
+    if (!username) return;
     const timestamp = new Date().toLocaleTimeString();
     const chatMessage = { username, message, timestamp };
-
-    // Ensure chatHistories exists for the room
     chatHistories.get(roomId).push(chatMessage);
     io.to(roomId).emit("RECEIVE_MESSAGE", chatMessage);
-
-    console.log(`📨 Message received from ${username}:`, message);
-    });
-
+  });
 
   // Ensure consistent message handling between ACTIONS.SEND_MESSAGE and SEND_MESSAGE
 
@@ -650,15 +415,15 @@ socket.on(ACTIONS.LANGUAGE_CHANGE, ({ roomId, language, username }) => {
       return;
   }
 
-  if (!language || !username) return; // ✅ Prevent undefined messages
-
+  // Update language in the room
   room.language = language;
   io.to(roomId).emit(ACTIONS.LANGUAGE_CHANGE, { language });
 
+  // Create and store the system message in chat history
   const timestamp = new Date().toLocaleTimeString();
   const systemMessage = {
       username: "System",
-      message: `${username} changed the language to ${language}.`,
+      message: `The host has  changed the language to ${language}.`,
       timestamp,
   };
 
@@ -667,7 +432,6 @@ socket.on(ACTIONS.LANGUAGE_CHANGE, ({ roomId, language, username }) => {
 
   io.to(roomId).emit("RECEIVE_MESSAGE", systemMessage);
 });
-
 
 socket.on(ACTIONS.CHANGE_ROLE, ({ roomId, targetSocketId, newRole, username }) => {
   const room = roomsMap.get(roomId);
@@ -717,84 +481,51 @@ socket.on(ACTIONS.CHANGE_ROLE, ({ roomId, targetSocketId, newRole, username }) =
 });
 
 
-socket.on('disconnect', () => {
-  const affectedRooms = [];
-  
-  for (const [roomId, room] of roomsMap.entries()) {
+  socket.on('disconnect', () => {
+    for (const [roomId, room] of roomsMap.entries()) {
       const disconnectedClient = room.clients.find(c => c.socketId === socket.id);
       if (disconnectedClient) {
-          affectedRooms.push({
-              roomId,
-              username: disconnectedClient.username,
-              wasHost: disconnectedClient.isHost
-          });
-
-          // Remove the client from the room
-          room.clients = room.clients.filter(c => c.socketId !== socket.id);
-      }
-  }
-
-  // Now process the affected rooms
-  for (const {roomId, username, wasHost} of affectedRooms) {
-      const room = roomsMap.get(roomId);
-      if (!room) continue;
-
-      // Notify all users about the disconnection
-      io.to(roomId).emit(ACTIONS.DISCONNECTED, {
+        room.clients = room.clients.filter(c => c.socketId !== socket.id);
+        io.to(roomId).emit(ACTIONS.DISCONNECTED, {
           clients: room.clients,
-          username: username,
+          username: disconnectedClient.username,
       });
-
-      // Send system message to chat
-      const timestamp = new Date().toLocaleTimeString();
-      const systemMessage = {
+        // **Send system message to chat**
+        const timestamp = new Date().toLocaleTimeString();
+        const systemMessage = {
           username: "System",
-          message: `${username} left the room.`,
-          timestamp,
+          message: `${disconnectedClient.username} left the room.`,
+          timestamp: new Date().toLocaleTimeString(),
       };
-
-      if (!chatHistories.has(roomId)) chatHistories.set(roomId, []);
-      chatHistories.get(roomId).push(systemMessage);
+      console.log("🔹 Sending system message:", systemMessage);
       io.to(roomId).emit("RECEIVE_MESSAGE", systemMessage);
+      
 
-      // **Ensure proper removal from all tracking maps**
-      if (userSocketMap.has(socket.id)) userSocketMap.delete(socket.id);
-      if (chatUsers.has(socket.id)) chatUsers.delete(socket.id);
 
-      // **Reassign host if needed**
-      if (wasHost && room.clients.length > 0) {
+        if (disconnectedClient.isHost && room.clients.length > 0) {
           const nextHost = room.clients.find(c => c.role === 'admin') || room.clients[0];
           if (nextHost) {
-              nextHost.isHost = true;
-              nextHost.role = 'admin';
+            nextHost.isHost = true;
+            nextHost.role = 'admin';
 
-              const hostChangeMessage = {
-                  username: "System",
-                  message: `${nextHost.username} is now the host.`,
-                  timestamp,
-              };
-
-              chatHistories.get(roomId).push(hostChangeMessage);
-              io.to(roomId).emit("HOST_CHANGED", {
-                  previousHost: username,
-                  newHost: nextHost.username
-              });
-              io.to(roomId).emit("RECEIVE_MESSAGE", hostChangeMessage);
+            io.to(roomId).emit("HOST_CHANGED", {
+              previousHost: disconnectedClient.username,
+              newHost: nextHost.username
+            });
+            
+            const systemMessage = {
+              username: "System",
+              message: `joined the room.`,
+              timestamp: new Date().toLocaleTimeString(),
+          };
+          console.log("🔹 Sending system message:", systemMessage);
+          io.to(roomId).emit("RECEIVE_MESSAGE", systemMessage);
+          
           }
+        }
       }
-
-      // **Ensure room is cleaned up if empty**
-      if (room.clients.length === 0) {
-          roomsMap.delete(roomId);
-          chatHistories.delete(roomId);
-      }
-  }
-
-  // **Final cleanup to prevent reappearance**
-  userSocketMap.delete(socket.id);
-  chatUsers.delete(socket.id);
-  console.log(`User ${socket.id} fully removed from tracking.`);
-});
+    }
+  });
 });
 
 const preprocessCode = (code, language) => {
@@ -844,13 +575,15 @@ app.post("/compile", async (req, res) => {
 
     const processedCode = preprocessCode(code, language);
 
-    let fileName = `main.${config.extension}`;
+    let fileName = `main.${config.extension}`;  // Default for all languages
+
     if (language === 'java') {
       const classMatch = processedCode.match(/public\s+class\s+(\w+)/);
       if (classMatch) {
-        fileName = `${classMatch[1]}.java`;
+        fileName = `${classMatch[1]}.java`;  // ✅ Match Java class filename correctly
       }
     }
+    
 
     const payload = {
       language: config.engine,

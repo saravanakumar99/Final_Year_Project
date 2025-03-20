@@ -54,7 +54,7 @@ function EditorPage() {
   const [isChangelogOpen, setIsChangelogOpen] = useState(false);
   const [code, setCode] = useState('');
   const [history, setHistory] = useState([]); 
-  const [isSocketConnected, setIsSocketConnected] = useState(false);
+
 
   const navigate = useNavigate();
 
@@ -65,7 +65,6 @@ function EditorPage() {
         return;
       }
 
-      // Initialize socket connection
       socketRef.current = io(process.env.REACT_APP_BACKEND_URL, {
         transports: ['websocket'], // Force WebSocket transport for faster initial connection
         reconnectionAttempts: 5,
@@ -78,91 +77,104 @@ function EditorPage() {
         reactNavigator('/');
       }
 
-      // Connection event handlers
-      socketRef.current.on('connect', () => {
-        console.log('Socket connected');
-        setIsSocketConnected(true);
-        
-        // Join room immediately after connection
-        socketRef.current.emit(ACTIONS.JOIN, {
-          roomId,
-          username: location.state?.username,
-        });
-      });
-
       socketRef.current.on('connect_error', (err) => handleErrors(err));
       socketRef.current.on('connect_failed', (err) => handleErrors(err));
 
+      socketRef.current.emit(ACTIONS.JOIN, {
+        roomId,
+        username: location.state?.username,
+      });
+
       // Listening for joined event
-      socketRef.current.on(ACTIONS.JOINED, ({ clients, username, socketId, isFirstUser, isReconnecting }) => {
-        // Update clients list immediately
-        if (clients && Array.isArray(clients)) {
-            setClients([...clients]);
-        }
-    
+      socketRef.current.on(ACTIONS.JOINED, ({ clients, username, socketId, isFirstUser ,isReconnecting }) => {
+        // Update clients list
+        setClients(clients);
+        
         // Find the current client by socket ID
         const currentClient = clients.find(client => client.socketId === socketRef.current.id);
         if (currentClient) {
-            setCurrentUserRole(currentClient.role);
-            setIsHost(currentClient.isHost);
+          // Set current user's role and host status based on client data
+          setCurrentUserRole(currentClient.role);
+          setIsHost(currentClient.isHost);
+
+          // Show appropriate welcome message based on role system
+          if (username === location.state?.username) {
+            if (isReconnecting) {
+              // Reconnecting user
+              toast.success('Reconnected to the room.');
+              if (currentClient.isHost) {
+                toast.success('You are still the host of this room.');
+              }
+            } else if (isFirstUser) {
+              // First user is both host and admin
+              setCurrentUserRole('host');
+              setIsHost(true);
+              toast.success('Welcome! You are the host of this room.');
+            } else if (currentClient.role === 'admin') {
+              // Non-host admin
+              toast.success('You are an admin now.');
+            } else {
+              // Viewer
+              toast.success('You are a viewer. You can view the code.');
+            }
+          } else {
+            // Another user joined
+            if (isReconnecting) {
+              toast.success(`${username} reconnected to the room.`);
+            } else {
+              toast.success(`${username} joined the room.`);
+            }
+          }
+        }
+      });
+      socketRef.current.on(ACTIONS.UPDATE_USERS, ({ clients }) => {
+        console.log("📢 Updating users list:", clients);
     
-            if (username === location.state?.username) {
-                if (isReconnecting) {
-                    toast.success('Reconnected to the room.');
-                    if (currentClient.isHost) {
-                        toast.success('You are still the host of this room.');
-                    }
-                } else if (isFirstUser) {
-                    setCurrentUserRole('host'); // ✅ Set the correct role as 'host'
-                    setIsHost(true);
-                    toast.success('Welcome! You are the Host of this room.');
-                } else if (currentClient.role === 'admin') {
-                    toast.success('You are an admin now.');
-                } else {
-                    toast.success('You are a viewer. You can view the code.');
-                }
+        if (clients && Array.isArray(clients)) {
+            setClients([...clients]);
+    
+            // Check if the current user is now the host
+            const newHost = clients.find(client => client.isHost);
+            if (newHost?.username === location.state?.username) {
+                setIsHost(true);
+                setCurrentUserRole("host");
+                toast.success("You are now the host.");
             }
         }
     });
     
 
-      socketRef.current.on(ACTIONS.UPDATE_USERS, ({ clients }) => {
-        console.log("📢 Updating users list:", clients);
-        if (clients && Array.isArray(clients)) {
-          // Create a new array to ensure React detects the change
-          setClients(prevClients => {
-            console.log("Previous clients:", prevClients, "New clients:", clients);
-            return [...clients];
-          });
-        }
-      });
-      
     
-      socketRef.current.on("HOST_CHANGED", ({ previousHost, newHost,clients }) => {
+      socketRef.current.on("HOST_CHANGED", ({ previousHost, newHost }) => {
         console.log(`🎙 Host changed: ${previousHost} ➝ ${newHost}`);
     
-        if (clients && Array.isArray(clients)) {
-          setClients([...clients]);
-        }
-        if (newHost === location.state?.username) {
-            toast.success('You are now the host of this room.');
-            setIsHost(true);
-            setCurrentUserRole('admin'); // Host should also be admin
-        }
+        setClients(prevClients => {
+            return prevClients.map(client => 
+                client.username === newHost ? { ...client, isHost: true } : { ...client, isHost: false }
+            );
+        });
     
-       
+        if (newHost === location.state?.username) {
+            setIsHost(true);
+            setCurrentUserRole("host"); // Make sure host role updates
+            toast.success("You are now the host of this room.");
+        } else {
+            setIsHost(false);
+        }
     });
-      
+    
+  
       
       // Listen for chat messages
       socketRef.current.on("RECEIVE_MESSAGE", (data) => {
-        console.log("📩 Received message:", data);
-      });
-      
-      socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
-        console.log("📜 Received history log:", historyLog);
-        setHistory(historyLog);
-      });
+    console.log("📩 Received message:", data);
+});
+
+socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
+  console.log("📜 Received history log:", historyLog);
+  setHistory(historyLog);
+});
+
 
       // Listening for disconnected
       socketRef.current.on(ACTIONS.DISCONNECTED, ({ username, clients }) => {
@@ -173,31 +185,29 @@ function EditorPage() {
           console.log("Updating clients state with:", clients);
           setClients([...clients]); // Create a new array to ensure state update
         }
-      
-        // Add system message
-        
       });
-      
     
+    
+    
+    
+
       // Listen for role changes
       socketRef.current.on(ACTIONS.ROLE_CHANGED, ({ clients, changedUserId, username, newRole }) => {
-        if (clients && Array.isArray(clients)) {
-          setClients([...clients]);
+        setClients(clients);
+        
+        // Update current user's role if it was changed
+        const currentClient = clients.find(client => client.socketId === socketRef.current.id);
+        
+        if (currentClient) {
+          setCurrentUserRole(currentClient.role);
+          setIsHost(currentClient.isHost);
           
-          // Update current user's role if it was changed
-          const currentClient = clients.find(client => client.socketId === socketRef.current.id);
-          
-          if (currentClient) {
-            setCurrentUserRole(currentClient.role);
-            setIsHost(currentClient.isHost);
-            
-            // Show role change message only to the affected user
-            if (currentClient.socketId === changedUserId) {
-              if (currentClient.role === 'admin') {
-                toast.success('You are an admin now.');
-              } else {
-                toast.success('You are a viewer now. You can only view');
-              }
+          // Show role change message only to the affected user
+          if (currentClient.socketId === changedUserId) {
+            if (currentClient.role === 'admin') {
+              toast.success('You are an admin now.');
+            } else {
+              toast.success('You are a viewer now. You can only view');
             }
           }
         }
@@ -205,13 +215,11 @@ function EditorPage() {
 
       // Listen for language changes
       socketRef.current.on(ACTIONS.LANGUAGE_CHANGE, ({ language, username }) => {
-        if (!language || !username) return; // ✅ Prevent undefined language messages
-    
-        if (username === location.state?.username) { // ✅ Show only to the one trying to change
-            toast.error("Only the host can change the language");
-        } 
-    });
-    
+        if (language) {
+          setSelectedLanguage(language);
+          toast.success(`Programming language changed to ${language.charAt(0).toUpperCase() + language.slice(1)}`);
+        }
+      });
 
       // Listen for errors
       socketRef.current.on('error', ({ message }) => {
@@ -245,13 +253,14 @@ function EditorPage() {
         socketRef.current?.off(ACTIONS.SYNC_CODE);
         socketRef.current?.off(ACTIONS.RECEIVE_MESSAGE);
         socketRef.current.off(ACTIONS.UPDATE_USERS);
-        socketRef.current.off("UPDATE_HISTORY");
+        socketRef.current.off("clearChat");
+        socketRef.current.off("UPDATE_HISTORY")
         socketRef.current?.off('error');
       };
     };
 
     init();
-  }, [location.state?.username, reactNavigator, roomId]);
+  }, [location.state?.username , reactNavigator,roomId]);
 
   const handleRoleChange = (socketId, newRole) => {
     const targetClient = clients.find(c => c.socketId === socketId);
@@ -307,19 +316,21 @@ function EditorPage() {
   };
 
   const handleLanguageChange = (e) => {
-    // Only allow admins and hosts to change language
-    if (currentUserRole === 'admin' || isHost) {
-      const newLanguage = e.target.value;
-      setSelectedLanguage(newLanguage);
-      socketRef.current?.emit(ACTIONS.LANGUAGE_CHANGE, {
+    // ✅ Only the host can change language
+    if (!isHost) {  
+        toast.error("Only the host can change the language");
+        return;
+    }
+
+    const newLanguage = e.target.value;
+    setSelectedLanguage(newLanguage);
+    socketRef.current?.emit(ACTIONS.LANGUAGE_CHANGE, {
         roomId,
         language: newLanguage,
         username: location.state?.username
-      });
-    } else {
-      toast.error("Only admins and hosts can change the language");
-    }
-  };
+    });
+};
+
 
   const canEdit = (client) => {
     return client && (client.role === 'admin' || client.isHost);
@@ -436,7 +447,8 @@ function EditorPage() {
             navigate("/");
         }, 500);
     }
-  };
+};
+
 
   const codeNeedsInput = (code) => {
     if (!code) return false;
@@ -487,21 +499,6 @@ function EditorPage() {
   const toggleChat = () => {
     setIsChatOpen((prev) => !prev);
   };
-  
-  // Render loading state while socket is connecting
-  if (!isSocketConnected) {
-    return (
-      <div className="container-fluid vh-100 d-flex justify-content-center align-items-center bg-dark text-light">
-        <div className="text-center">
-          <div className="spinner-border text-light mb-3" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <h4>Connecting to room...</h4>
-        </div>
-      </div>
-    );
-  }
-  
   return (
     <div className="container-fluid vh-100 d-flex flex-column">
       <div className="row flex-grow-1">
@@ -516,13 +513,7 @@ function EditorPage() {
           <hr style={{ marginTop: "2rem" }} />
           <div className="d-flex flex-column flex-grow-1 overflow-auto">
             <span className="mb-2">Connected Users</span>
-            <div className="connected-users-list">
-              {clients.length > 0 ? (
-                clients.map((client) => renderClient(client))
-              ) : (
-                <div className="text-muted">Loading users...</div>
-              )}
-            </div>
+            {clients.map((client) => renderClient(client))}
           </div>
           <hr />
           <div className="mt-auto mb-3">
@@ -548,7 +539,7 @@ function EditorPage() {
             <select 
               value={selectedLanguage}
               onChange={handleLanguageChange}
-              disabled={!(currentUserRole === 'admin' || isHost)}
+              disabled={!isHost}  // ✅ Only host can change language
               className="form-select w-auto"
             >
               {LANGUAGES.map((lang) => (
@@ -620,13 +611,13 @@ function EditorPage() {
         Import File
       </button>
       <button 
-        className="history-toggle-btn" 
-        onClick={() => setShowHistory(!showHistory)}
-      >
-        {showHistory ? "Hide History" : "View History"}
-      </button>
+  className="history-toggle-btn" 
+  onClick={() => setShowHistory(!showHistory)}
+>
+  {showHistory ? "Hide History" : "View History"}
+</button>
 
-      {showHistory && <HistoryLog history={history} />}
+{showHistory && <HistoryLog history={history} />}
       <button
         className="save-file-btn"
         onClick={handleSaveFile}
@@ -682,7 +673,9 @@ function EditorPage() {
           zIndex: 1050,
         }}
       >
+
         {isChatOpen ? "Close AI" : "AI Chat"}
+
       </button>
 
       {/* Chat Section */}

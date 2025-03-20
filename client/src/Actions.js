@@ -9,9 +9,10 @@ const ACTIONS = {
   CHANGE_ROLE: 'change-role',
   ROLE_CHANGED: 'role-changed',
   LEAVE: 'leave',
-  SEND_MESSAGE: 'send-message',
-  RECEIVE_MESSAGE: 'receive-message',
+  SEND_MESSAGE: 'SEND_MESSAGE',
+  RECEIVE_MESSAGE: 'RECEIVE_MESSAGE',
   LANGUAGE_CHANGE: 'language-change',
+   CLEAR_CHAT: "clearChat"
 };
 
-export default ACTIONS;
+module.exports = ACTIONS;
