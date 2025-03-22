@@ -86,6 +86,7 @@ const isLocalChangeRef = useRef(false);
       socketRef.current.emit(ACTIONS.JOIN, {
         roomId,
         username: location.state?.username,
+        photoURL: location.state?.avatar,  // ✅ Send profile picture
       });
 
       // Listening for joined event

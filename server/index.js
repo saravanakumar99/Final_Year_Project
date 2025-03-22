@@ -52,7 +52,6 @@ const chatUsers = new Map();
 
 io.on("connection", (socket) => {
   socket.on(ACTIONS.JOIN, ({ roomId, username, photoURL }) => {
-    console.log(`User joined: ${username}, Photo URL: ${photoURL}`);
     socket.join(roomId);
 
     if (!roomsMap.has(roomId)) {
@@ -66,14 +65,13 @@ io.on("connection", (socket) => {
     const newClient = {
         socketId: socket.id,
         username,
-        photoURL, // ✅ Store profile picture URL
+        photoURL,  // ✅ Store profile picture
         role: isFirstUser ? 'admin' : 'viewer',
         isHost: isFirstUser
     };
     room.clients.push(newClient);
 
     io.to(roomId).emit(ACTIONS.JOINED, { clients: room.clients, username, socketId: socket.id });
-
     // Save join message in chat history
     const timestamp = new Date().toLocaleTimeString();
     const joinMessage = { username: "System", message: `${username} joined the room.`, timestamp };
