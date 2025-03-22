@@ -47,15 +47,23 @@ function Home() {
   };
 
   const joinRoom = () => {
-    if (!roomId.trim() || !user) {
-      toast.error("Login and a valid Room ID are required!");
+    if (!roomId || !user) {
+      toast.error("Login and Room ID are required!");
       return;
     }
-    navigate(`/editor/${roomId.trim()}`, {
-      state: { username: user.displayName, avatar: user.photoURL },
+  
+    navigate(`/editor/${roomId}`, {
+      state: { 
+        username: user.displayName, 
+        email: user.email, // ✅ Use email as a unique identifier
+        uid: user.uid, // ✅ Firebase UID is always unique
+        avatar: user.photoURL 
+      },
     });
+  
     toast.success("Room joined successfully!");
   };
+  
   
 
   return (
@@ -90,12 +98,15 @@ function Home() {
                 {/* Show user info if logged in, otherwise show login button */}
                 {user ? (
                   <div className="text-center">
-                    <img
-                      src={user.photoURL}
-                      alt="User Avatar"
-                      width="50"
-                      className="rounded-circle"
-                    />
+                    {user.photoURL && (  // ✅ Check if photoURL exists before using it
+      <img
+        src={user.photoURL}
+        alt="User Avatar"
+        width="50"
+        height="50"
+        className="rounded-circle"
+      />
+    )}
                     <h5 className="mt-2">Welcome, {user.displayName}!</h5>
                     <button onClick={joinRoom} className="btn btn-success btn-lg">
                       JOIN
