@@ -22,10 +22,9 @@ function Home() {
     const loggedInUser = await signInWithGoogle();
     if (loggedInUser) {
       setUser(loggedInUser);
-      localStorage.setItem("user", JSON.stringify(loggedInUser)); // Save user data
+      localStorage.setItem("user", JSON.stringify(loggedInUser));
       toast.success(`Welcome, ${loggedInUser.displayName}!`);
-    }
-    else{
+    } else {
       toast.error("Google login failed");
     }
   };
@@ -33,11 +32,10 @@ function Home() {
   const handleLogout = async () => {
     await logOut();
     setUser(null);
-    setRoomId("");  // ✅ Clear the Room ID
+    setRoomId(""); // ✅ Clear the Room ID
     localStorage.removeItem("user");
     toast.success("Logged out successfully!");
   };
-  
 
   const generateRoomId = (e) => {
     e.preventDefault();
@@ -51,7 +49,7 @@ function Home() {
       toast.error("Login and Room ID are required!");
       return;
     }
-  
+
     navigate(`/editor/${roomId}`, {
       state: { 
         username: user.displayName, 
@@ -60,11 +58,9 @@ function Home() {
         avatar: user.photoURL 
       },
     });
-  
+
     toast.success("Room joined successfully!");
   };
-  
-  
 
   return (
     <div className="container-fluid">
@@ -84,53 +80,66 @@ function Home() {
           <div className="card shadow-sm mb-5 new_name1">
             <div className="card-body new_name">
               <div className="flex-grow-1">
-                <h4 className="card-title mb-4">Enter the ROOM ID</h4>
-                <div className="form-group">
-                  <input
-                    type="text"
-                    value={roomId}
-                    onChange={(e) => setRoomId(e.target.value)}
-                    className="form-control mb-3"
-                    placeholder="ROOM ID"
-                  />
-                </div>
+                
+                {/* ✅ Message displayed before login */}
+                {!user && (
+                  <p className="text-center text-danger fw-bold">
+                    🔒 You can enter a room only after login.
+                  </p>
+                )}
 
-                {/* Show user info if logged in, otherwise show login button */}
-                {user ? (
+                {/* ✅ Show Login Button First */}
+                {!user ? (
+                  <button onClick={handleLogin} className="btn btn-primary btn-lg">
+                    Login with Google
+                  </button>
+                ) : (
                   <div className="text-center">
-                    {user.photoURL && (  // ✅ Check if photoURL exists before using it
-      <img
-        src={user.photoURL}
-        alt="User Avatar"
-        width="50"
-        height="50"
-        className="rounded-circle"
-      />
-    )}
+                    {user.photoURL && (
+                      <img
+                        src={user.photoURL}
+                        alt="User Avatar"
+                        width="50"
+                        height="50"
+                        className="rounded-circle"
+                      />
+                    )}
                     <h5 className="mt-2">Welcome, {user.displayName}!</h5>
-                    <button onClick={joinRoom} className="btn btn-success btn-lg">
-                      JOIN
-                    </button>
                     <button onClick={handleLogout} className="btn btn-danger btn-lg m-2">
                       Logout
                     </button>
                   </div>
-                ) : (
-                  <button onClick={handleLogin} className="btn btn-primary btn-lg">
-                    Login with Google
-                  </button>
                 )}
 
-                <p className="mt-3 text-dark">
-                  Don't have a room ID? Create{" "}
-                  <span
-                    onClick={generateRoomId}
-                    className="text-success p-2"
-                    style={{ cursor: "pointer" }}
-                  >
-                    New Room
-                  </span>
-                </p>
+                {/* ✅ Show Room Input & Join Button Only After Login */}
+                {user && (
+                  <>
+                    <h4 className="card-title mb-4">Enter the ROOM ID</h4>
+                    <div className="form-group">
+                      <input
+                        type="text"
+                        value={roomId}
+                        onChange={(e) => setRoomId(e.target.value)}
+                        className="form-control mb-3"
+                        placeholder="ROOM ID"
+                      />
+                    </div>
+
+                    <button onClick={joinRoom} className="btn btn-success btn-lg">
+                      JOIN
+                    </button>
+                    <p className="mt-3 text-dark">
+                      Don't have a room ID? Create{" "}
+                      <span
+                        onClick={generateRoomId}
+                        className="text-success p-2"
+                        style={{ cursor: "pointer" }}
+                      >
+                        New Room
+                      </span>
+                    </p>
+                  </>
+                )}
               </div>
 
               <div className="image-container">
