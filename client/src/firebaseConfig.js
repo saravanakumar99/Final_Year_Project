@@ -1,6 +1,7 @@
 // firebaseConfig.js
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
+import toast from "react-hot-toast";
 import { getAnalytics } from "firebase/analytics";
 // Your Firebase configuration (Find this in Firebase Console -> Project Settings)
 const firebaseConfig = {
