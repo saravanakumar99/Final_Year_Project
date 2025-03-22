@@ -25,14 +25,19 @@ function Home() {
       localStorage.setItem("user", JSON.stringify(loggedInUser)); // Save user data
       toast.success(`Welcome, ${loggedInUser.displayName}!`);
     }
+    else{
+      toast.error("Google login failed");
+    }
   };
 
   const handleLogout = async () => {
     await logOut();
     setUser(null);
-    localStorage.removeItem("user"); // Remove user from storage
+    setRoomId("");  // ✅ Clear the Room ID
+    localStorage.removeItem("user");
     toast.success("Logged out successfully!");
   };
+  
 
   const generateRoomId = (e) => {
     e.preventDefault();
@@ -42,16 +47,16 @@ function Home() {
   };
 
   const joinRoom = () => {
-    if (!roomId || !user) {
-      toast.error("Login and Room ID are required!");
+    if (!roomId.trim() || !user) {
+      toast.error("Login and a valid Room ID are required!");
       return;
     }
-
-    navigate(`/editor/${roomId}`, {
+    navigate(`/editor/${roomId.trim()}`, {
       state: { username: user.displayName, avatar: user.photoURL },
     });
     toast.success("Room joined successfully!");
   };
+  
 
   return (
     <div className="container-fluid">

@@ -22,9 +22,11 @@ const analytics = getAnalytics(app);
 const signInWithGoogle = async () => {
   try {
     const result = await signInWithPopup(auth, provider);
+    return result.ueser;
     console.log(result.user);
   } catch (error) {
     console.error(error.message);
+    return null;
   }
 };
 
