@@ -33,7 +33,9 @@ const LANGUAGE_MODES = {
 
 function Editor({ socketRef, roomId, onCodeChange, isAdmin, isHost, language, code ,username }) {
   const editorRef = useRef(null);
-  const lastRemoteChangeRef = useRef(null);
+  const localEditingRef = useRef(false);
+const pendingCodeRef = useRef('');
+const codeChangeTimeoutRef = useRef(null);
 
   // Initialize editor
   useEffect(() => {
@@ -86,30 +88,35 @@ editorRef.current.on("change", (instance, changes) => {
   const { origin } = changes;
   const newCode = instance.getValue();
 
-  if (origin !== "setValue" && origin !== "remote") {
-      if (canEdit) {
-          onCodeChange(newCode);
-          
-          // Clear any existing timeout
-          clearTimeout(typingTimeout);
-          
-          // Set a new timeout to delay the socket emission
-          typingTimeout = setTimeout(() => {
-              if (newCode !== lastCode) {
-                  lastCode = newCode;
-                  socketRef.current?.emit(ACTIONS.CODE_CHANGE, {
-                      roomId,
-                      code: newCode,
-                      username: localStorage.getItem("username") || "Guest",
-                  });
-              }
-          }, 100); // 100ms delay
-      } else {
-          if (instance.getValue() !== code) {
-              instance.setValue(code || '');
-          }
-          toast.error("You are in view-only mode");
+  if (origin !== "setValue" && canEdit) {
+    // Mark that we're in a local editing mode
+    localEditingRef.current = true;
+    
+    // Store code but don't emit immediately
+    pendingCodeRef.current = newCode;
+    
+    // Clear any pending timeout
+    if (codeChangeTimeoutRef.current) {
+      clearTimeout(codeChangeTimeoutRef.current);
+    }
+    
+    // Set new timeout to emit code after typing pauses
+    codeChangeTimeoutRef.current = setTimeout(() => {
+      if (socketRef.current) {
+        socketRef.current.emit(ACTIONS.CODE_CHANGE, {
+          roomId,
+          code: pendingCodeRef.current,
+          username: localStorage.getItem("username") || "Guest",
+        });
       }
+      localEditingRef.current = false;
+    }, 500); // Longer delay to ensure typing finishes
+  } else if (!canEdit && origin !== "setValue") {
+    // For viewers, prevent any editing
+    if (instance.getValue() !== code) {
+      instance.setValue(code || '');
+    }
+    toast.error("You are in view-only mode");
   }
 });
 
@@ -131,25 +138,23 @@ editorRef.current.on("change", (instance, changes) => {
  // Update code when it changes externally
 useEffect(() => {
   if (editorRef.current && code !== undefined) {
+    // Skip updates while user is actively typing
+    if (localEditingRef.current) {
+      return;
+    }
+    
     const currentValue = editorRef.current.getValue();
     if (code !== currentValue) {
       const cursor = editorRef.current.getCursor();
       const scrollInfo = editorRef.current.getScrollInfo();
       
-      // Temporarily disable change events to prevent feedback loops
-      editorRef.current.off("change");
-      
       editorRef.current.setValue(code);
       
-      // Restore cursor position and scroll position
       if (isAdmin || isHost) {
+        // Restore cursor position for editors
         editorRef.current.setCursor(cursor);
         editorRef.current.scrollTo(scrollInfo.left, scrollInfo.top);
       }
-      
-      // Re-enable change events
-      const canEdit = isAdmin || isHost;
-      setupChangeHandler(canEdit);
     }
   }
 }, [code, isAdmin, isHost]);
