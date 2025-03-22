@@ -33,6 +33,7 @@ const LANGUAGE_MODES = {
 
 function Editor({ socketRef, roomId, onCodeChange, isAdmin, isHost, language, code ,username }) {
   const editorRef = useRef(null);
+  const lastRemoteChangeRef = useRef(null);
 
   // Initialize editor
   useEffect(() => {
@@ -64,14 +65,18 @@ function Editor({ socketRef, roomId, onCodeChange, isAdmin, isHost, language, co
       );
 
       // Set editor size after initialization
-      if (editorRef.current) {
-        editorRef.current.setSize("100%", "100%");
-editorRef.current.getWrapperElement().style.overflow = "auto"; // ✅ Enables scrolling
+     // In your first useEffect, replace the existing change handler setup with:
+if (editorRef.current) {
+  editorRef.current.setSize("100%", "100%");
+  editorRef.current.getWrapperElement().style.overflow = "auto";
+  editorRef.current.setValue(code || '');
+  requestAnimationFrame(() => {
+    editorRef.current.refresh();
+  });
+  
+  // Setup change handler with the canEdit flag
+  setupChangeHandler(canEdit);
 
-        editorRef.current.setValue(code || '');
-        requestAnimationFrame(() => {
-          editorRef.current.refresh();
-        });
 
         let typingTimeout = null;
 let lastCode = "";
@@ -123,18 +128,68 @@ editorRef.current.on("change", (instance, changes) => {
   }, [isAdmin, isHost]); // Reinitialize when role changes
 
   // Update code when it changes externally
-  useEffect(() => {
-    if (editorRef.current && code !== undefined) {
-      const currentValue = editorRef.current.getValue();
-      if (code !== currentValue) {
-        const cursor = editorRef.current.getCursor();
-        editorRef.current.setValue(code);
-        if (isAdmin || isHost) {
-          editorRef.current.setCursor(cursor);
+ // Update code when it changes externally
+useEffect(() => {
+  if (editorRef.current && code !== undefined) {
+    const currentValue = editorRef.current.getValue();
+    if (code !== currentValue) {
+      const cursor = editorRef.current.getCursor();
+      const scrollInfo = editorRef.current.getScrollInfo();
+      
+      // Temporarily disable change events to prevent feedback loops
+      editorRef.current.off("change");
+      
+      editorRef.current.setValue(code);
+      
+      // Restore cursor position and scroll position
+      if (isAdmin || isHost) {
+        editorRef.current.setCursor(cursor);
+        editorRef.current.scrollTo(scrollInfo.left, scrollInfo.top);
+      }
+      
+      // Re-enable change events
+      const canEdit = isAdmin || isHost;
+      setupChangeHandler(canEdit);
+    }
+  }
+}, [code, isAdmin, isHost]);
+// Add this function outside of the useEffect blocks
+const setupChangeHandler = (canEdit) => {
+  let typingTimeout = null;
+  let lastCode = "";
+  
+  editorRef.current.on("change", (instance, changes) => {
+    const { origin } = changes;
+    const newCode = instance.getValue();
+
+    if (origin !== "setValue" && origin !== "remote") {
+      if (canEdit) {
+        // Call the onCodeChange directly for immediate local update
+        onCodeChange(newCode);
+        
+        // Clear any existing timeout
+        clearTimeout(typingTimeout);
+        
+        // Set a new timeout to delay the socket emission
+        typingTimeout = setTimeout(() => {
+          if (newCode !== lastCode) {
+            lastCode = newCode;
+            socketRef.current?.emit(ACTIONS.CODE_CHANGE, {
+              roomId,
+              code: newCode,
+              username: localStorage.getItem("username") || "Guest",
+            });
+          }
+        }, 300); // Increased to 300ms to reduce network traffic
+      } else {
+        if (instance.getValue() !== code) {
+          instance.setValue(code || '');
         }
+        toast.error("You are in view-only mode");
       }
     }
-  }, [code,isAdmin,isHost]);
+  });
+};
 
   // Update editor mode when language changes
   useEffect(() => {

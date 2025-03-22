@@ -54,6 +54,9 @@ function EditorPage() {
   const [isChangelogOpen, setIsChangelogOpen] = useState(false);
   const [code, setCode] = useState('');
   const [history, setHistory] = useState([]); 
+  // Add at the top with other useRef declarations
+const codeChangeTimeoutRef = useRef(null);
+const isLocalChangeRef = useRef(false);
 
 
   const navigate = useNavigate();
@@ -228,7 +231,8 @@ socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
 
       // Listen for code changes
       socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code }) => {
-        if (code !== null) {
+        // Only update if this is not a result of our own change
+        if (!isLocalChangeRef.current && code !== null) {
           setCode(code);
         }
       });
@@ -306,12 +310,28 @@ socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
 
   const handleCodeChange = (newCode) => {
     setCode(newCode);
+    
+    // Only emit if user is allowed to edit
     if (currentUserRole === 'admin' || isHost) {
-      socketRef.current.emit(ACTIONS.CODE_CHANGE, {
-        roomId,
-        code: newCode,
-        username: location.state?.username
-      });
+      // Clear any pending timeout
+      if (codeChangeTimeoutRef.current) {
+        clearTimeout(codeChangeTimeoutRef.current);
+      }
+      
+      // Set flag to indicate this is a local change
+      isLocalChangeRef.current = true;
+      
+      // Debounce the socket emission to reduce frequency
+      codeChangeTimeoutRef.current = setTimeout(() => {
+        socketRef.current.emit(ACTIONS.CODE_CHANGE, {
+          roomId,
+          code: newCode,
+          username: location.state?.username
+        });
+        
+        // Reset flag after emitting
+        isLocalChangeRef.current = false;
+      }, 100); // 100ms debounce
     }
   };
 
@@ -560,6 +580,7 @@ socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
                 isHost={isHost}
                 language={selectedLanguage}
                 code={code}
+                preserveCursorPosition={true}
               />
               
             </div>
