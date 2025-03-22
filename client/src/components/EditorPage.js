@@ -91,6 +91,7 @@ const isLocalChangeRef = useRef(false);
       // Listening for joined event
       socketRef.current.on(ACTIONS.JOINED, ({ clients, username, socketId, isFirstUser ,isReconnecting }) => {
         // Update clients list
+        console.log("Updated Client List:", clients);
         setClients(clients);
         
         // Find the current client by socket ID
@@ -295,6 +296,11 @@ socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
   };
 
   const renderClient = (client) => {
+    console.log("Clients List in Parent:", clients);
+clients.forEach(client => {
+  console.log(`Client - Username: ${client.username}, Photo URL: ${client.photoURL}`);
+});
+
     return (
       
       <Client

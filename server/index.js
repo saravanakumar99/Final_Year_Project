@@ -51,29 +51,27 @@ const connectedUsers = new Map();
 const chatUsers = new Map();
 
 io.on("connection", (socket) => {
-  socket.on(ACTIONS.JOIN, ({ roomId, username }) => {
+  socket.on(ACTIONS.JOIN, ({ roomId, username, photoURL }) => {
+    console.log(`User joined: ${username}, Photo URL: ${photoURL}`);
     socket.join(roomId);
-    
+
     if (!roomsMap.has(roomId)) {
         roomsMap.set(roomId, { clients: [], code: "", language: "python3" });
     }
-    
+
     const room = roomsMap.get(roomId);
-    
-    // Remove existing user instance before adding new one
     room.clients = room.clients.filter(c => c.username !== username);
-    
-    // Determine roles
+
     const isFirstUser = room.clients.length === 0;
     const newClient = {
         socketId: socket.id,
         username,
+        photoURL, // ✅ Store profile picture URL
         role: isFirstUser ? 'admin' : 'viewer',
         isHost: isFirstUser
     };
     room.clients.push(newClient);
-    
-    // Send updated client list to all users
+
     io.to(roomId).emit(ACTIONS.JOINED, { clients: room.clients, username, socketId: socket.id });
 
     // Save join message in chat history
