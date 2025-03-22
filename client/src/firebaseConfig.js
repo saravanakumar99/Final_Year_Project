@@ -7,7 +7,7 @@ const firebaseConfig = {
     apiKey: "AIzaSyBG1wKbpC9zujEXfyfMKCkAUe4Ney1Jkyk",
     authDomain: "dev-together-91ead.firebaseapp.com",
     projectId: "dev-together-91ead",
-    storageBucket: "dev-together-91ead.firebasestorage.app",
+    storageBucket: "dev-together-91ead.appspot.com",
     messagingSenderId: "133339109178",
     appId: "1:133339109178:web:1271789301fee9a7e66203",
     measurementId: "G-LH9PTX3X65"
@@ -22,13 +22,19 @@ const analytics = getAnalytics(app);
 const signInWithGoogle = async () => {
   try {
     const result = await signInWithPopup(auth, provider);
-    return result.ueser;
-    console.log(result.user);
+    console.log("User Info:", result.user);
+    return result.user;
   } catch (error) {
-    console.error(error.message);
+    if (error.code === "auth/cancelled-popup-request" || error.code === "auth/popup-closed-by-user") {
+      console.warn("Popup was closed before authentication could complete.");
+    } else {
+      console.error("Google Login Error:", error.message);
+      toast.error(`Login failed: ${error.message}`);
+    }
     return null;
   }
 };
+
 
 // Logout Function
 const logOut = async () => {
