@@ -3,7 +3,7 @@ import Avatar from 'react-avatar';
 import { toast } from 'react-hot-toast';
 import { useLocation } from 'react-router-dom';
 
-const Client = ({ username, role, isHost, currentUserRole, isCurrentUserHost, onRoleChange }) => {
+const Client = ({ username, role, isHost, currentUserRole, isCurrentUserHost, onRoleChange,  photoURL  }) => {
   const location = useLocation();
   const isCurrentUser = username === location.state?.username;
 

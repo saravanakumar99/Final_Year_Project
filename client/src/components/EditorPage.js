@@ -304,6 +304,7 @@ socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
         currentUserRole={currentUserRole}
         isCurrentUserHost={isHost}
         onRoleChange={(newRole) => handleRoleChange(client.socketId, newRole)}
+        photoURL={client.photoURL}
       />
     );
   };
