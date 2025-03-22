@@ -60,10 +60,24 @@ const Client = ({ username, role, isHost, currentUserRole, isCurrentUserHost, on
     <div className="client">
       <div className="user-info">
       {photoURL ? (
-          <img src={photoURL} alt="User Avatar" className="avatar-image" />
-        ) : (
-          <Avatar name={username} size={50} round="14px" />
-        )}
+  <img
+    src={photoURL}
+    alt="User Avatar"
+    className="avatar-image"
+  />
+) : (
+  <Avatar name={username} size={40} round="14px" />
+)}
+<style jsx>{`
+  .avatar-image {
+    width: 40px; /* ✅ Same size as Avatar */
+    height: 40px;
+    border-radius: 50%; /* ✅ Makes it circular */
+    object-fit: cover; /* ✅ Ensures proper scaling */
+    border: 2px solid white; /* ✅ Adds a clean border */
+  }
+`}</style>
+
         <div className="user-details">
           <div className="username-container">
             <span className="username">{username}</span>
