@@ -1,68 +1,75 @@
 import "./Home.css";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { v4 as uuid } from "uuid";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { signInWithGoogle, logOut } from "../firebaseConfig";
 
 function Home() {
   const [roomId, setRoomId] = useState("");
-  const [username, setUsername] = useState("");
-
+  const [user, setUser] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Load user data from localStorage on page refresh
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  const handleLogin = async () => {
+    const loggedInUser = await signInWithGoogle();
+    if (loggedInUser) {
+      setUser(loggedInUser);
+      localStorage.setItem("user", JSON.stringify(loggedInUser)); // Save user data
+      toast.success(`Welcome, ${loggedInUser.displayName}!`);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logOut();
+    setUser(null);
+    localStorage.removeItem("user"); // Remove user from storage
+    toast.success("Logged out successfully!");
+  };
 
   const generateRoomId = (e) => {
     e.preventDefault();
-    const id = uuid().slice(0,16);
+    const id = uuid().slice(0, 16);
     setRoomId(id);
-    toast.success("Room Id is generated");
+    toast.success("Room ID generated!");
   };
 
   const joinRoom = () => {
-    if (!roomId || !username) {
-      toast.error("Both fields are required");
+    if (!roomId || !user) {
+      toast.error("Login and Room ID are required!");
       return;
     }
 
-    // Redirect to the editor page with roomId and username state
     navigate(`/editor/${roomId}`, {
-      state: {
-        username,
-      },
+      state: { username: user.displayName, avatar: user.photoURL },
     });
-    toast.success("Room is created");
-  };
-
-  // Trigger joinRoom when Enter is pressed
-  const handleInputEnter = (e) => {
-    if (e.code === "Enter") {
-      joinRoom();
-    }
+    toast.success("Room joined successfully!");
   };
 
   return (
     <div className="container-fluid">
-    <div className="logo">
-      <img src="/images/logo5.jpg" alt="logo"></img>
-    </div>
-    <div className="Footer">
-    <p className="header-text">"Where Coders Connect & Ideas Flow"</p>
-    </div>
+      <div className="logo">
+        <img src="/images/logo5.jpg" alt="logo" />
+      </div>
+      <div className="Footer">
+        <p className="header-text">"Where Coders Connect & Ideas Flow"</p>
+      </div>
 
       <div className="full-container">
-        {/* Left-side image (outside the card) */}
         <div className="left-image-container">
-          <img 
-            src="/images/main.png" 
-            alt="Left Side" 
-            className="left-image" 
-          />
+          <img src="/images/main.png" alt="Left Side" className="left-image" />
         </div>
 
-        {/* Card container */}
         <div className="right-aligned-content">
           <div className="card shadow-sm mb-5 new_name1">
             <div className="card-body new_name">
-              {/* Form contents */}
               <div className="flex-grow-1">
                 <h4 className="card-title mb-4">Enter the ROOM ID</h4>
                 <div className="form-group">
@@ -72,24 +79,34 @@ function Home() {
                     onChange={(e) => setRoomId(e.target.value)}
                     className="form-control mb-3"
                     placeholder="ROOM ID"
-                    onKeyUp={handleInputEnter}
                   />
                 </div>
-                <div className="form-group">
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="form-control mb-3"
-                    placeholder="USERNAME"
-                    onKeyUp={handleInputEnter}
-                  />
-                </div>
-                <button onClick={joinRoom} className="btn btn-success btn-lg">
-                  JOIN
-                </button>
+
+                {/* Show user info if logged in, otherwise show login button */}
+                {user ? (
+                  <div className="text-center">
+                    <img
+                      src={user.photoURL}
+                      alt="User Avatar"
+                      width="50"
+                      className="rounded-circle"
+                    />
+                    <h5 className="mt-2">Welcome, {user.displayName}!</h5>
+                    <button onClick={joinRoom} className="btn btn-success btn-lg">
+                      JOIN
+                    </button>
+                    <button onClick={handleLogout} className="btn btn-danger btn-lg m-2">
+                      Logout
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={handleLogin} className="btn btn-primary btn-lg">
+                    Login with Google
+                  </button>
+                )}
+
                 <p className="mt-3 text-dark">
-                  Don't have a room ID? create{" "}
+                  Don't have a room ID? Create{" "}
                   <span
                     onClick={generateRoomId}
                     className="text-success p-2"
@@ -100,13 +117,8 @@ function Home() {
                 </p>
               </div>
 
-              {/* Right-side image inside the card (if still needed) */}
               <div className="image-container">
-                <img
-                  className="right-image"
-                  src="/images/main1.png"
-                  alt="Right"
-                />
+                <img className="right-image" src="/images/main1.png" alt="Right" />
               </div>
             </div>
           </div>
