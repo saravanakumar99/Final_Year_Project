@@ -296,6 +296,7 @@ socketRef.current.on("UPDATE_HISTORY", (historyLog) => {
 
   const renderClient = (client) => {
     return (
+      
       <Client
         key={client.socketId}
         username={client.username}

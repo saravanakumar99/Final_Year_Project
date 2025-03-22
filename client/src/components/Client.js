@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { useLocation } from 'react-router-dom';
 
 const Client = ({ username, role, isHost, currentUserRole, isCurrentUserHost, onRoleChange,  photoURL  }) => {
+  console.log(`Client Component - Username: ${username}, Photo URL: ${photoURL}`);
   const location = useLocation();
   const isCurrentUser = username === location.state?.username;
 
