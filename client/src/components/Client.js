@@ -58,7 +58,11 @@ const Client = ({ username, role, isHost, currentUserRole, isCurrentUserHost, on
   return (
     <div className="client">
       <div className="user-info">
-        <Avatar name={username} size={50} round="14px" />
+      {photoURL ? (
+          <img src={photoURL} alt="User Avatar" className="avatar-image" />
+        ) : (
+          <Avatar name={username} size={50} round="14px" />
+        )}
         <div className="user-details">
           <div className="username-container">
             <span className="username">{username}</span>
