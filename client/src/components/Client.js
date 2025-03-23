@@ -117,7 +117,7 @@ const Client = ({ username, role, isHost, currentUserRole, isCurrentUserHost, on
         }
          /* Add styling for current user */
         .client.current-user {
-          background-color: #2d4263; /* A distinct background color for the current user */
+          background-color:rgb(28, 116, 167); /* A distinct background color for the current user */
           border-left: 3px solid #4CAF50; /* Optional: add a green border on the left */
         }
         .user-info {
