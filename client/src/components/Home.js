@@ -131,7 +131,7 @@ function Home() {
                       />
                     </div>
 
-                    <button onClick={joinRoom} className="btn btn-success btn-lg">
+                    <button onClick={joinRoom} className="btn-join btn btn-success btn-lg">
                       JOIN
                     </button>
                     <p className="mt-3 text-dark">

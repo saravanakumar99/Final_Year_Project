@@ -89,9 +89,9 @@ body {
 
 .card-title {
   font-size: 1.3rem;
+  text-align: center;
   font-weight: 600;
   margin-top: 1rem;
-  margin-left: 15px;
   margin-bottom: 2.0rem;
   color: black;
 }
@@ -110,6 +110,7 @@ body {
   font-size: 1rem;
   background-color: #333;
   color: white;
+  margin-left: 13px;
 }
 
 .form-control::placeholder {
@@ -213,4 +214,32 @@ p.mt-3 {
   width: 120px !important;
   position: fixed;
   margin: 30px;
+}
+
+.g-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #000000 !important;
+  background-color: #fbfdff !important; /* Google blue */
+  border: none !important;
+}
+
+.g-login:hover {
+  background-color: #282829 !important;
+  color: #fdfeff !important;
+  box-shadow: 2px 5px 10px gray;
+}
+
+.google-icon {
+  margin-right: 5px;
+}
+
+.g-logout{
+  height: 20px !important;
+}
+
+.btn-join{
+  margin-left: 13px;
 }
