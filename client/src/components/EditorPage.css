@@ -150,7 +150,7 @@ textarea::-webkit-scrollbar-thumb:hover {
 }
 .changelog-button {
   top: 8px;
-  right: 250px;
+  right: 232px;
   z-index: 1050;
 }
 
@@ -177,7 +177,7 @@ Chat Component Styles
 .save-file-btn {
   position: fixed;
   top: 8px;
-  right: 370px; /* Move it further left to prevent overlap */
+  right: 346px; /* Move it further left to prevent overlap */
   z-index: 1050;
   background-color: #6c757d;
   color: white;
@@ -206,7 +206,7 @@ Chat Component Styles
   position: fixed;
   top: 8px;
   /* left: calc(20% + 100px); Positioned right after save button */
-  right:480px;
+  right:456px;
   z-index: 1050;
   padding: 7px 16px;
   background-color: #316da1;
@@ -214,4 +214,20 @@ Chat Component Styles
   border: none;
   border-radius: 8px;
 }
+.history-toggle-btn{
+  font-size: 16px;
+  position: fixed;
+  right: 570px;
+  top: 0;
+  margin: 8px;
+  padding: 7px 16px;
+  border-radius: 8px;
+}
 
+.btn-run{
+  position: fixed;
+  top: 8px;
+  left:255px;
+  margin: 0px;
+
+}

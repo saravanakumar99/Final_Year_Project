@@ -616,15 +616,19 @@ clients.forEach(client => {
         </div>
       )}
       {/* Compiler Window Toggle Button */}
-      {!isCompiling && (
-        <button
-          className="btn btn-primary btn-com position-fixed bottom-0 end-0 m-3"
-          onClick={toggleCompileWindow}
-          style={{ zIndex: 1050 }}
-        >
-          Open Compiler
-        </button>
-      )}
+      <button
+      className="run-btn btn-run btn btn-primary btn-success"
+      onClick={() => {
+        if (!isCompileWindowOpen) {
+          toggleCompileWindow(); // Open the window only if closed
+        }
+        handleRunClick(); // Start compiling
+      }}
+      style={{ zIndex: 1050 }}
+      disabled={isCompiling} // Disable button when compiling
+    >
+      {isCompiling ? "Compiling..." : "Run Code"}
+    </button>
       <input
         type="file"
         id="file-import"
@@ -678,7 +682,7 @@ clients.forEach(client => {
               onClick={handleRunClick}
               disabled={isCompiling}
             >
-              {isCompiling ? "Compiling..." : "Run Code"}
+              {isCompiling ? "Compiling..." : "Run Again"}
             </button>
             <button
               className="btn btn-secondary close-btn"
