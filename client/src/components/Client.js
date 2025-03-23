@@ -57,14 +57,14 @@ const Client = ({ username, role, isHost, currentUserRole, isCurrentUserHost, on
   };
 
   return (
-    <div className="client">
+    <div className={`client ${isCurrentUser ? 'current-user' : ''}`}>
       <div className="user-info">
-      {photoURL ? (
-  <img
-    src={photoURL}
-    alt="User Avatar"
-    className="avatar-image"
-  />
+        {photoURL ? (
+          <img
+            src={photoURL}
+            alt="User Avatar"
+            className="avatar-image"
+          />
 ) : (
   <Avatar name={username} size={40} round="14px" />
 )}
@@ -81,7 +81,7 @@ const Client = ({ username, role, isHost, currentUserRole, isCurrentUserHost, on
         <div className="user-details">
           <div className="username-container">
             <span className="username">{username}</span>
-            {isCurrentUser && <span className="current-user-badge">You</span>}
+            
           </div>
         </div>
       </div>
@@ -115,7 +115,11 @@ const Client = ({ username, role, isHost, currentUserRole, isCurrentUserHost, on
         .client:hover {
           background-color: #2d2e32;
         }
-
+         /* Add styling for current user */
+        .client.current-user {
+          background-color: #2d4263; /* A distinct background color for the current user */
+          border-left: 3px solid #4CAF50; /* Optional: add a green border on the left */
+        }
         .user-info {
           display: flex;
           align-items: center;
