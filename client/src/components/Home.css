@@ -72,7 +72,12 @@ body {
 
 /* Allow the form container to take available space */
 .flex-grow-1 {
-  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  text-align: center;
 }
 
 /* Container for the right-side image */
@@ -99,11 +104,11 @@ body {
 /* Form styling */
 .form-group {
   width: 90%;
-  margin-bottom: 1rem;
+  margin-bottom: 0rem;
 }
 
 .form-control {
-  padding: 0.75rem 1rem;
+  padding: 0rem 0rem;
   border: 1px solid #000000;
   border-radius: 8px;
   width: 100%;
@@ -213,4 +218,34 @@ p.mt-3 {
   width: 120px !important;
   position: fixed;
   margin: 30px;
+}
+
+.btn-primary.btn-lg {
+  display: block;
+  margin: 0 auto;
+  min-width: 200px; /* Optional: gives a good width to the button */
+}
+
+.g-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #000000 !important;
+  background-color: #fbfdff !important; /* Google blue */
+  border: none !important;
+}
+
+.g-login:hover {
+  background-color: #282829 !important;
+  color: #fdfeff !important;
+  box-shadow: 2px 5px 10px gray;
+}
+
+.google-icon {
+  margin-right: 5px;
+}
+
+.g-logout{
+  height: 20px !important;
 }
