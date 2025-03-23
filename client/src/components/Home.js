@@ -65,7 +65,7 @@ function Home() {
   return (
     <div className="container-fluid">
       <div className="logo">
-        <img src="/images/logo5.jpg" alt="logo" />
+        <img src="/images/logo5.webp" alt="logo" />
       </div>
       <div className="Footer">
         <p className="header-text">"Where Coders Connect & Ideas Flow"</p>
@@ -73,7 +73,7 @@ function Home() {
 
       <div className="full-container">
         <div className="left-image-container">
-          <img src="/images/main.png" alt="Left Side" className="left-image" />
+          <img src="/images/main.webp" alt="Left Side" className="left-image" />
         </div>
 
         <div className="right-aligned-content">
@@ -149,7 +149,7 @@ function Home() {
               </div>
 
               <div className="image-container">
-                <img className="right-image" src="/images/main1.png" alt="Right" />
+                <img className="right-image" src="/images/main1.webp" alt="Right" />
               </div>
             </div>
           </div>

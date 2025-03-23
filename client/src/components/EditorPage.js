@@ -534,7 +534,7 @@ clients.forEach(client => {
         {/* Sidebar */}
         <div className="col-md-2 bg-dark text-light d-flex flex-column">
           <img
-            src="/images/logo3.jpeg"
+            src="/images/logo3.webp"
             alt="Logo"
             className="img-fluid mx-auto"
             style={{ maxWidth: "150px", marginTop: "20px", borderradius: "0px" }}
