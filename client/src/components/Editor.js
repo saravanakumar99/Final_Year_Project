@@ -13,22 +13,9 @@ import { toast } from "react-hot-toast";
 
 const LANGUAGE_MODES = {
   'python3': { name: 'python' },
-  'javascript': { name: 'javascript', json: true },
   'java': { name: 'text/x-java' },
   'cpp': { name: 'text/x-c++src' },
-  'nodejs': { name: 'javascript' },
   'c': { name: 'text/x-csrc' },
-  'ruby': { name: 'ruby' },
-  'go': { name: 'go' },
-  'scala': { name: 'text/x-scala' },
-  'bash': { name: 'shell' },
-  'sql': { name: 'sql' },
-  'pascal': { name: 'pascal' },
-  'csharp': { name: 'text/x-csharp' },
-  'php': { name: 'php' },
-  'swift': { name: 'swift' },
-  'rust': { name: 'rust' },
-  'r': { name: 'r' }
 };
 
 function Editor({ socketRef, roomId, onCodeChange, isAdmin, isHost, language, code ,username }) {

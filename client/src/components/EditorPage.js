@@ -369,13 +369,7 @@ clients.forEach(client => {
     python3: "py",
     java: "java",
     cpp: "cpp",
-    nodejs: "js",
     c: "c",
-    ruby: "rb",
-    go: "go",
-    csharp: "cs",
-    swift: "swift",
-    rust: "rs",
   };
 
   const handleSaveFile = () => {
