@@ -373,15 +373,9 @@ clients.forEach(client => {
     c: "c",
     ruby: "rb",
     go: "go",
-    scala: "scala",
-    bash: "sh",
-    sql: "sql",
-    pascal: "pas",
     csharp: "cs",
-    php: "php",
     swift: "swift",
     rust: "rs",
-    r: "r",
   };
 
   const handleSaveFile = () => {
