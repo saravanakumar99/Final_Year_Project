@@ -66,7 +66,7 @@ io.on("connection", (socket) => {
         socketId: socket.id,
         username,
         photoURL,  // ✅ Store profile picture
-        role: isFirstUser ? 'admin' : 'viewer',
+        role: isFirstUser ? 'host' : 'viewer',
         isHost: isFirstUser
     };
     room.clients.push(newClient);
